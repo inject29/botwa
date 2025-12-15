@@ -1,0 +1,11 @@
+# Dependencies
+/node_modules
+
+# Database
+products.db
+
+# WhatsApp Session Data (Sangat Penting untuk Keamanan)
+/baileys_auth_info
+
+# Log File
+npm-debug.log*
