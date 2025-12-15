@@ -42,7 +42,12 @@ async function createProductImage(product, queryText, qty = null) {
         let productImageBuffer;
         if (productImage) {
             try {
-                const response = await axios.get(productImage, { responseType: 'arraybuffer' });
+                const response = await axios.get(productImage, { 
+                    responseType: 'arraybuffer',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                });
                 productImageBuffer = Buffer.from(response.data);
             } catch (error) {
                 console.error('Gagal mengunduh gambar produk:', error.message);
