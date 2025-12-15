@@ -42,10 +42,20 @@ async function createProductImage(product, queryText, qty = null) {
         let productImageBuffer;
         if (productImage) {
             try {
+                // Tentukan Referer (biasanya domain asal gambar) untuk menghindari blokir hotlink
+                let refererUrl = 'https://www.google.com/';
+                try { refererUrl = new URL(productImage).origin + '/'; } catch (e) {}
+
                 const response = await axios.get(productImage, { 
                     responseType: 'arraybuffer',
+                    timeout: 15000, // Timeout 15 detik agar tidak hang
                     headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                        'Referer': refererUrl,
+                        'Sec-Fetch-Dest': 'image',
+                        'Sec-Fetch-Mode': 'no-cors',
+                        'Sec-Fetch-Site': 'cross-site'
                     }
                 });
                 productImageBuffer = Buffer.from(response.data);
