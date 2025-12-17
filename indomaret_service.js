@@ -28,6 +28,17 @@ const DEFAULT_PARAMS = {
     districtId: '141300950'
 };
 
+// --- FUNGSI GET PROXY ---
+async function getProxy() {
+    try {
+        const response = await axios.get('https://gimmeproxy.com/api/getProxy');
+        return { host: response.data.ip, port: response.data.port };
+    } catch (error) {
+        console.error('❌ Gagal mendapatkan proxy:', error.message);
+        return null;
+    }
+}
+
 // --- FUNGSI AUTO TOKEN (PUPPETEER) ---
 async function getDynamicToken() {
     // Jika token masih ada dan belum expired (valid 50 menit), pakai yang lama
@@ -130,7 +141,8 @@ async function getProductDetail(permalink) {
 async function getAutocomplete(keyword) {
     try {
         const crypto = require('crypto');
-        const response = await axios.get('https://ap-mc.klikindomaret.com/assets-klikidmsearch/api/get/catalog-xpress/api/webapp/search/autocomplete', {
+        const proxy = await getProxy();
+        const config = {
             params: {
                 ...DEFAULT_PARAMS,
                 keyword: keyword
@@ -152,7 +164,11 @@ async function getAutocomplete(keyword) {
                 'DNT': '1',
                 'Upgrade-Insecure-Requests': '1'
             }
-        });
+        };
+        if (proxy) {
+            config.proxy = proxy;
+        }
+        const response = await axios.get('https://ap-mc.klikindomaret.com/assets-klikidmsearch/api/get/catalog-xpress/api/webapp/search/autocomplete', config);
         return response.data;
     } catch (error) {
         console.error('❌ Autocomplete API Error:', error.message);
