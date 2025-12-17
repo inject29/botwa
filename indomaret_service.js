@@ -31,7 +31,7 @@ const DEFAULT_PARAMS = {
 // --- FUNGSI GET PROXY ---
 async function getProxy() {
     try {
-        const response = await axios.get('https://api.proxyscrape.com/v2/?request=getproxies&protocol=https&timeout=10000&country=all&ssl=yes&anonymity=all&api_key=lcvl96hilwxdrou9qgnf');
+        const response = await axios.get('https://api.proxyscrape.com/v2/?request=getproxies&protocol=https&timeout=10000&country=all&ssl=yes&anonymity=all&api_key=lcvl96hilwxdrou9qgnf', { timeout: 5000 });
         const proxies = response.data.split('\r\n').filter(p => p);
         if (proxies.length === 0) return null;
         const randomProxy = proxies[Math.floor(Math.random() * proxies.length)];
@@ -167,7 +167,8 @@ async function getAutocomplete(keyword) {
                 'Sec-Ch-Ua-Platform': '"Windows"',
                 'DNT': '1',
                 'Upgrade-Insecure-Requests': '1'
-            }
+            },
+            timeout: 10000
         };
         if (proxy) {
             config.proxy = proxy;
