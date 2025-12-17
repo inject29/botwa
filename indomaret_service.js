@@ -246,6 +246,35 @@ async function handleCommand(sock, jid, text, msg) {
         return true;
     }
 
+    // Command: .search <keyword>
+    if (command === '.search') {
+        if (!args) {
+            await sock.sendMessage(jid, { text: '⚠️ Masukkan keyword untuk pencarian.\nContoh: *.search bimoli*' }, { quoted: msg });
+            return true;
+        }
+        await sock.sendMessage(jid, { text: `🔎 Mencari produk: "${args}"...` }, { quoted: msg });
+        const data = await getAutocomplete(args);
+        if (data && data.data) {
+            const { suggestedKeywords, products } = data.data;
+            let reply = `🔍 *Hasil Autocomplete untuk "${args}"*\n\n`;
+            if (suggestedKeywords && suggestedKeywords.length > 0) {
+                reply += `💡 *Saran Kata Kunci:* ${suggestedKeywords.join(', ')}\n\n`;
+            }
+            if (products && products.length > 0) {
+                reply += `🛒 *Produk Ditemukan:*\n`;
+                products.forEach((product, index) => {
+                    reply += `${index + 1}. *${product.productName}*\n   PLU: ${product.plu}\n   Harga: Rp ${product.finalPrice.toLocaleString('id-ID')} (Diskon: ${product.discountText})\n   Permalink: ${product.permalink}\n\n`;
+                });
+            } else {
+                reply += `❌ Tidak ada produk ditemukan.\n`;
+            }
+            await sock.sendMessage(jid, { text: reply }, { quoted: msg });
+        } else {
+            await sock.sendMessage(jid, { text: '❌ Gagal mengambil data autocomplete.' }, { quoted: msg });
+        }
+        return true;
+    }
+
     return false;
 }
 
