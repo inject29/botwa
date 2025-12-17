@@ -269,13 +269,14 @@ async function connectToWhatsApp() {
                 message.imageMessage?.caption ||
                 '';
             const text = String(rawText || '').trim();
+            const name = msg.pushName || 'Pengguna';
 
             console.log('messages.upsert from=', jid, 'text=', text);
 
-            const HELP_MESSAGE = `👋 Selamat Datang.\nBot mencari kode produk (PLU/Barcode/Nama).\n\n*Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n*Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n\n*Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n*Fitur Indomaret:*\n• .indo <permalink> : Cek detail produk\n• .search <keyword> : Cari produk via autocomplete\n\n• *.menu* : Tampilkan pesan ini.`;
+            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n\n📱 *Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n• *.menu* : Tampilkan pesan ini.`;
 
             if (text.toLowerCase() === 'tes') {
-                await sock.sendMessage(jid, { text: 'Bot OK. Koneksi aktif.' }, { quoted: msg });
+                await sock.sendMessage(jid, { text: `🤖 Bot OK. Koneksi aktif. Halo ${name}!` }, { quoted: msg });
                 return;
             }
 
@@ -283,9 +284,9 @@ async function connectToWhatsApp() {
             // Jika perintah adalah .sms, proses di sini dan stop (return).
             if (await smsService.handleCommand(sock, jid, text, msg)) return;
 
-            // --- Integrasi Indomaret (Terpisah) ---
+            // --- Integrasi Indomaret (Dinonaktifkan) ---
             // Command: .indo <permalink>
-            if (await indomaretService.handleCommand(sock, jid, text, msg)) return;
+            // if (await indomaretService.handleCommand(sock, jid, text, msg)) return;
 
             // --- Fitur Bulk / Qty (.bulk) ---
             // Format: ".bulk <kode> <jumlah>"
@@ -297,14 +298,14 @@ async function connectToWhatsApp() {
                 if (code && /^\d+$/.test(code)) {
                     const quantity = parseInt(qty) || 1;
                     
-                    await sock.sendMessage(jid, { text: '⏳ Sedang memproses...' }, { quoted: msg });
+                    await sock.sendMessage(jid, { text: `⏳ Sedang memproses oleh ${name}...` }, { quoted: msg });
                     try {
                         // Cari produk di database (PLU/Barcode) agar nama barang tampil di label
                         let product = await getProductDetails(code);
                         let caption = '';
 
                         if (product) {
-                            caption = `✅ Produk Ditemukan: *${product.nama}*\nKode: ${code} (Qty: ${quantity})`;
+                            caption = `✅ Produk Ditemukan oleh ${name}: *${product.nama}*\nKode: ${code} (Qty: ${quantity})`;
                         } else {
                             // Jika tidak ditemukan, gunakan data dummy agar tetap bisa cetak label (Fallback)
                             product = {
@@ -313,7 +314,7 @@ async function connectToWhatsApp() {
                                 barcode: code,
                                 plu: code
                             };
-                            caption = `⚠️ Produk tidak ditemukan di database.\nLabel manual dibuat: ${code} (Qty: ${quantity})`;
+                            caption = `⚠️ Produk tidak ditemukan di database oleh ${name}.\nLabel manual dibuat: ${code} (Qty: ${quantity})`;
                         }
 
                         const finalImageBuffer = await createProductImage(product, code, quantity);
@@ -324,7 +325,7 @@ async function connectToWhatsApp() {
                         await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan.` }, { quoted: msg });
                     }
                 } else {
-                     await sock.sendMessage(jid, { text: `⚠️ Format salah. Gunakan: *.bulk <kode> <jumlah>*\nContoh: .bulk 89912345 25` }, { quoted: msg });
+                     await sock.sendMessage(jid, { text: `⚠️ Format salah oleh ${name}. Gunakan: *.bulk <kode> <jumlah>*\nContoh: .bulk 89912345 25` }, { quoted: msg });
                 }
                 return;
             }
@@ -335,23 +336,23 @@ async function connectToWhatsApp() {
                 const codes = text.replace(/^\.plu\s+/i, '').split(/[\s,\n]+/).filter(c => /^\d+$/.test(c));
                 
                 if (codes.length > 0) {
-                    await sock.sendMessage(jid, { text: `🔄 Memproses ${codes.length} kode produk...` }, { quoted: msg });
+                    await sock.sendMessage(jid, { text: `🔄 Memproses ${codes.length} kode produk oleh ${name}...` }, { quoted: msg });
                     
                     for (const code of codes) {
                         try {
                             const product = await getProductDetails(code);
                             if (product) {
                                 const finalImageBuffer = await createProductImage(product, code);
-                                await sock.sendMessage(jid, { image: finalImageBuffer, caption: `✅ Produk Ditemukan: ${code}` }, { quoted: msg });
+                                await sock.sendMessage(jid, { image: finalImageBuffer, caption: `✅ Produk Ditemukan oleh ${name}: ${code}` }, { quoted: msg });
                             } else {
-                                await sock.sendMessage(jid, { text: `❌ Kode "${code}" tidak ditemukan.` }, { quoted: msg });
+                                await sock.sendMessage(jid, { text: `❌ Kode "${code}" tidak ditemukan oleh ${name}.` }, { quoted: msg });
                             }
                             await delay(1000); // Jeda aman untuk menghindari spam
                         } catch (err) {
                             console.error(`Error multi-plu processing ${code}:`, err);
                         }
                     }
-                    await sock.sendMessage(jid, { text: `✅ Selesai memproses daftar PLU.` }, { quoted: msg });
+                    await sock.sendMessage(jid, { text: `✅ Selesai memproses daftar PLU oleh ${name}.` }, { quoted: msg });
                     return;
                 }
             }
@@ -367,7 +368,7 @@ async function connectToWhatsApp() {
 
             if (text.length >= 5 && /^\d+$/.test(text)) {
                 console.log(`Mulai pencarian DB untuk kode: ${text}`);
-                await sock.sendMessage(jid, { text: '⏳ Sedang mencari data...' }, { quoted: msg });
+                await sock.sendMessage(jid, { text: `⏳ Sedang mencari data oleh ${name}...` }, { quoted: msg });
                 try {
                     const product = await getProductDetails(text);
                     console.log('Pencarian DB selesai. Hasil:', product ? 'DITEMUKAN' : 'TIDAK DITEMUKAN');
@@ -377,13 +378,13 @@ async function connectToWhatsApp() {
                         const finalImageBuffer = await createProductImage(product, text);
                         
                         // Send the single composite image
-                        await sock.sendMessage(jid, { 
+                        await sock.sendMessage(jid, {
                             image: finalImageBuffer,
-                            caption: `✅ Produk Ditemukan: ${text}`
+                            caption: `✅ Produk Ditemukan oleh ${name}: ${text}`
                         }, { quoted: msg });
 
                     } else {
-                        await sock.sendMessage(jid, { text: `Produk dengan kode "${text}" tidak ditemui.` }, { quoted: msg });
+                        await sock.sendMessage(jid, { text: `Produk dengan kode "${text}" tidak ditemukan oleh ${name}.` }, { quoted: msg });
                     }
                 } catch (error) {
                     console.error('❌ Kesalahan dalam pemprosesan mesej:', error?.message || error);
@@ -395,14 +396,14 @@ async function connectToWhatsApp() {
                 try {
                     const results = await searchProductByName(query);
                     if (results.length > 0) {
-                        let replyMsg = `🔎 *Hasil Pencarian: "${query}"*\nDitemukan ${results.length} produk:\n\n`;
+                        let replyMsg = `🔎 *Hasil Pencarian oleh ${name}: "${query}"*\nDitemukan ${results.length} produk:\n\n`;
                         results.forEach(p => {
                             replyMsg += `• *${p.nama}*\n  PLU: ${p.plu} | Barcode: ${p.barcode}\n\n`;
                         });
                         replyMsg += `_Kirim kode PLU di atas untuk melihat gambar._`;
                         await sock.sendMessage(jid, { text: replyMsg }, { quoted: msg });
                     } else {
-                        await sock.sendMessage(jid, { text: `❌ Tidak ditemukan produk dengan nama "${query}".` }, { quoted: msg });
+                        await sock.sendMessage(jid, { text: `❌ Tidak ditemukan produk dengan nama "${query}" oleh ${name}.` }, { quoted: msg });
                     }
                 } catch (err) {
                     console.error('Error search name:', err);
