@@ -271,7 +271,7 @@ async function connectToWhatsApp() {
 
             console.log('messages.upsert from=', jid, 'text=', text);
 
-            const HELP_MESSAGE = `👋 Selamat Datang.\nBot mencari kode produk (PLU/Barcode/Nama).\n\n*Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n*Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n\n*Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n*Fitur Indomaret:*\n• .indo <permalink> : Cek detail produk\n\n• *.menu* : Tampilkan pesan ini.`;
+            const HELP_MESSAGE = `👋 Selamat Datang.\nBot mencari kode produk (PLU/Barcode/Nama).\n\n*Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n*Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n\n*Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n*Fitur Indomaret:*\n• .indo <permalink> : Cek detail produk\n• .search <keyword> : Cari produk via autocomplete\n\n• *.menu* : Tampilkan pesan ini.`;
 
             if (text.toLowerCase() === 'tes') {
                 await sock.sendMessage(jid, { text: 'Bot OK. Koneksi aktif.' }, { quoted: msg });
