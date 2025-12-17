@@ -129,18 +129,31 @@ async function getProductDetail(permalink) {
 
 // --- FUNGSI CARI PERMALINK DARI PLU/NAMA ---
 async function searchProductPermalink(keyword) {
+    let browser = null;
     try {
-        // Kita scrape halaman pencarian untuk mendapatkan permalink produk pertama
-        const searchUrl = `${SEARCH_PAGE_URL}/?key=${encodeURIComponent(keyword)}`;
-        const response = await axios.get(searchUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        // Gunakan Puppeteer karena Axios diblokir (403) oleh WAF/Cloudflare
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        });
+
+        const page = await browser.newPage();
+        
+        // Optimasi: Block gambar/font agar hemat kuota & cepat
+        await page.setRequestInterception(true);
+        page.on('request', (req) => {
+            if (['image', 'stylesheet', 'font', 'media'].includes(req.resourceType())) {
+                req.abort();
+            } else {
+                req.continue();
             }
         });
 
-        // Regex sederhana untuk mencari link produk di HTML
-        // Pola: <a href="/product/nama-produk" ...
-        const match = response.data.match(/href="\/product\/([^"]+)"/);
+        const searchUrl = `${SEARCH_PAGE_URL}/?key=${encodeURIComponent(keyword)}`;
+        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+        const content = await page.content();
+        const match = content.match(/href="\/product\/([^"]+)"/);
         if (match && match[1]) {
             return match[1]; // Mengembalikan permalink (misal: bimoli-minyak-goreng-2l)
         }
@@ -148,6 +161,8 @@ async function searchProductPermalink(keyword) {
     } catch (error) {
         console.error('❌ Search Error:', error.message);
         return null;
+    } finally {
+        if (browser) await browser.close();
     }
 }
 
