@@ -31,7 +31,7 @@ const DEFAULT_PARAMS = {
 // --- FUNGSI GET PROXY ---
 async function getProxy() {
     try {
-        const response = await axios.get('https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all&api_key=lcvl96hilwxdrou9qgnf');
+        const response = await axios.get('https://api.proxyscrape.com/v2/?request=getproxies&protocol=https&timeout=10000&country=all&ssl=yes&anonymity=all&api_key=lcvl96hilwxdrou9qgnf');
         const proxies = response.data.split('\r\n').filter(p => p);
         if (proxies.length === 0) return null;
         const randomProxy = proxies[Math.floor(Math.random() * proxies.length)];
