@@ -129,9 +129,6 @@ async function getProductDetail(permalink) {
 
 async function getAutocomplete(keyword) {
     try {
-        const token = await getDynamicToken();
-        if (!token) throw new Error("Gagal mendapatkan Authorization Token");
-
         const response = await axios.get('https://ap-mc.klikindomaret.com/assets-klikidmsearch/api/get/catalog-xpress/api/webapp/search/autocomplete', {
             params: {
                 ...DEFAULT_PARAMS,
@@ -144,8 +141,6 @@ async function getAutocomplete(keyword) {
                 'Accept-Language': 'en-US,en;q=0.5',
                 'Accept-Encoding': 'gzip, deflate, br, zstd',
                 'x-correlation-id': '1f694784-b825-418c-9f24-a78774529216',
-                'Authorization': token,
-                'apps': '{"app_version":"Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0","device_class":"browser|browser","device_family":"none","device_id":"6bad80b1-4e06-47e1-97be-2e3d37366e43","os_name":"Linux","os_version":"none"}',
                 'Origin': 'https://www.klikindomaret.com',
                 'Referer': 'https://www.klikindomaret.com/',
                 'Sec-Fetch-Dest': 'empty',
