@@ -6,6 +6,7 @@ const fs = require('fs');
 const bwipjs = require('bwip-js');
 const sharp = require('sharp');
 const axios = require('axios');
+const smsService = require('./sms_service'); // 1. Import modul SMS terpisah
 
 // --- Konfigurasi Database SQLite ---
 const DB_FILE = 'products.db';
@@ -34,6 +35,16 @@ function getProductDetails(query) {
     });
 }
 
+function searchProductByName(query) {
+    const sql = `SELECT plu, barcode, nama FROM products WHERE nama LIKE ? LIMIT 10`;
+    return new Promise((resolve, reject) => {
+        db.all(sql, [`%${String(query).trim()}%`], (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows || []);
+        });
+    });
+}
+
 async function createProductImage(product, queryText, qty = null) {
     try {
         const { nama: productName, gambar: productImage, barcode, plu } = product;
@@ -48,28 +59,36 @@ async function createProductImage(product, queryText, qty = null) {
 
                 const response = await axios.get(productImage, { 
                     responseType: 'arraybuffer',
-                    timeout: 15000, // Timeout 15 detik agar tidak hang
+                    timeout: 5000, // Timeout 5 detik agar lebih cepat pindah ke proxy jika hang
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                         'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-                        'Referer': refererUrl,
-                        'Sec-Fetch-Dest': 'image',
-                        'Sec-Fetch-Mode': 'no-cors',
-                        'Sec-Fetch-Site': 'cross-site'
+                        'Referer': refererUrl
                     }
                 });
                 productImageBuffer = Buffer.from(response.data);
             } catch (error) {
-                console.error('Gagal mengunduh gambar produk:', error.message);
-                // Fallback to a placeholder if image download fails
-                productImageBuffer = await sharp({
-                    create: {
-                        width: 400,
-                        height: 300,
-                        channels: 4,
-                        background: { r: 200, g: 200, b: 200, alpha: 1 }
-                    }
-                }).png().toBuffer();
+                console.warn(`⚠️ Gagal download langsung (${error.message}), mengalihkan ke Proxy...`);
+                try {
+                    // Fallback: Gunakan proxy wsrv.nl untuk bypass blokir IP VPS
+                    const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(productImage)}&output=png`;
+                    const response = await axios.get(proxyUrl, { 
+                        responseType: 'arraybuffer',
+                        timeout: 15000
+                    });
+                    productImageBuffer = Buffer.from(response.data);
+                } catch (proxyError) {
+                    console.error('Gagal download via proxy:', proxyError.message);
+                    // Fallback to a placeholder if image download fails
+                    productImageBuffer = await sharp({
+                        create: {
+                            width: 400,
+                            height: 300,
+                            channels: 4,
+                            background: { r: 200, g: 200, b: 200, alpha: 1 }
+                        }
+                    }).png().toBuffer();
+                }
             }
         } else {
             // Create a placeholder if no image URL
@@ -237,6 +256,9 @@ async function connectToWhatsApp() {
             const jid = msg.key.remoteJid || '';
             if (jid === 'status@broadcast') return;
 
+            // Abaikan pesan dari grup (hanya respon chat pribadi)
+            if (jid.endsWith('@g.us')) return;
+
             const message = msg.message;
             const rawText =
                 message.conversation ||
@@ -247,10 +269,16 @@ async function connectToWhatsApp() {
 
             console.log('messages.upsert from=', jid, 'text=', text);
 
+            const HELP_MESSAGE = `👋 Selamat Datang.\nBot mencari kode produk (PLU/Barcode/Nama).\n\n*Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n*Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n\n*Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n• *.menu* : Tampilkan pesan ini.`;
+
             if (text.toLowerCase() === 'tes') {
                 await sock.sendMessage(jid, { text: 'Bot OK. Koneksi aktif.' }, { quoted: msg });
                 return;
             }
+
+            // --- Integrasi Projek SMS (Terpisah) ---
+            // Jika perintah adalah .sms, proses di sini dan stop (return).
+            if (await smsService.handleCommand(sock, jid, text, msg)) return;
 
             // --- Fitur Bulk / Qty (.bulk) ---
             // Format: ".bulk <kode> <jumlah>"
@@ -308,9 +336,12 @@ async function connectToWhatsApp() {
                 }
             }
 
+            if (text.toLowerCase() === '.menu' || text.toLowerCase() === '.help') {
+                await sock.sendMessage(jid, { text: HELP_MESSAGE }, { quoted: msg });
+                return;
+            }
+
             if (!text) {
-                const helpMessage = `👋 Selamat Datang.\nBot mencari kode produk (PLU/Barcode).\nKirimkan kode berupa *angka* min 5 digit.\n\n*Fitur Bulk (Qty):*\nKetik ".bulk <kode> <jumlah>" untuk label dengan Qty.\n\n*Fitur Multi PLU:*\nKetik ".plu <kode1> <kode2> ..." untuk cari banyak sekaligus.`;
-                await sock.sendMessage(jid, { text: helpMessage }, { quoted: msg });
                 return;
             }
 
@@ -338,9 +369,25 @@ async function connectToWhatsApp() {
                     console.error('❌ Kesalahan dalam pemprosesan mesej:', error?.message || error);
                     await sock.sendMessage(jid, { text: `⚠️ Maaf, berlaku kesalahan server. Sila cuba lagi.` }, { quoted: msg });
                 }
-            } else {
-                const helpMessage = `👋 Selamat Datang.\nBot mencari kode produk (PLU/Barcode).\nKirimkan kode berupa *angka* min 5 digit.\n\n*Fitur Bulk (Qty):*\nKetik ".bulk <kode> <jumlah>" untuk label dengan Qty.\n\n*Fitur Multi PLU:*\nKetik ".plu <kode1> <kode2> ..." untuk cari banyak sekaligus.`;
-                await sock.sendMessage(jid, { text: helpMessage }, { quoted: msg });
+            } else if (/^\.cari\s+/i.test(text)) {
+                // --- Fitur Cari Nama ---
+                const query = text.replace(/^\.cari\s+/i, '').trim();
+                try {
+                    const results = await searchProductByName(query);
+                    if (results.length > 0) {
+                        let replyMsg = `🔎 *Hasil Pencarian: "${query}"*\nDitemukan ${results.length} produk:\n\n`;
+                        results.forEach(p => {
+                            replyMsg += `• *${p.nama}*\n  PLU: ${p.plu} | Barcode: ${p.barcode}\n\n`;
+                        });
+                        replyMsg += `_Kirim kode PLU di atas untuk melihat gambar._`;
+                        await sock.sendMessage(jid, { text: replyMsg }, { quoted: msg });
+                    } else {
+                        await sock.sendMessage(jid, { text: `❌ Tidak ditemukan produk dengan nama "${query}".` }, { quoted: msg });
+                    }
+                } catch (err) {
+                    console.error('Error search name:', err);
+                    await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan saat mencari nama.` }, { quoted: msg });
+                }
             }
 
         } catch (err) {
