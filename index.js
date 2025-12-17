@@ -258,8 +258,9 @@ async function connectToWhatsApp() {
             const jid = msg.key.remoteJid || '';
             if (jid === 'status@broadcast') return;
 
-            // Abaikan pesan dari grup (hanya respon chat pribadi)
-            if (jid.endsWith('@g.us')) return;
+            // Abaikan pesan lama (lebih dari 1 menit) untuk menghindari memproses pesan tertunda saat startup
+            if (msg.messageTimestamp && msg.messageTimestamp * 1000 < Date.now() - 60000) return;
+
 
             const message = msg.message;
             const rawText =

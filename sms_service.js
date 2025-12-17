@@ -154,7 +154,7 @@ async function handleCommand(sock, jid, text, msg) {
         await sock.sendMessage(jid, { text: `⏳ Memantau SMS untuk Order ${orderId} (Timeout 60s)...` }, { quoted: msg });
 
         const startTime = Date.now();
-        const timeout = 60000; // 60 detik
+        const timeout = 120000; // 60 detik
 
         while (Date.now() - startTime < timeout) {
             const res = await callApi('/sms.php', { id: orderId });
