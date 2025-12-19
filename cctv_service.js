@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 /**
  * Modul untuk menangani menu CCTV
  * @param {object} sock - Socket koneksi WA
@@ -5,7 +8,6 @@
  * @param {object} m - Objek pesan asli (quoted)
  */
 const handleCctvMenu = async (sock, from, m) => {
-    const imageUrl = 'https://github.com/inject29/botwa/blob/main/cctv.png?raw=true';
     const captionText = `*CCTV MONITORING*\n\n` +
                         `Berikut adalah akses login CCTV:\n` +
                         `👤 *User:* admin\n` +
@@ -14,7 +16,7 @@ const handleCctvMenu = async (sock, from, m) => {
     try {
         await sock.sendMessage(from, { text: '⏳ Sedang mengambil data qr dan password...' }, { quoted: m });
         await sock.sendMessage(from, { 
-            image: { url: imageUrl }, 
+            image: fs.readFileSync(path.join(__dirname, 'cctv.png')), 
             caption: captionText 
         }, { quoted: m });
     } catch (error) {
