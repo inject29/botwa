@@ -19,7 +19,7 @@ const handleCctvMenu = async (sock, from, m) => {
         }, { quoted: m });
     } catch (error) {
         console.error('[ERROR] Gagal mengirim menu CCTV:', error);
-        await sock.sendMessage(from, { text: 'Maaf, terjadi kesalahan saat mengambil gambar CCTV.' }, { quoted: m });
+        await sock.sendMessage(from, { text: `⚠️ Gagal memuat gambar. Berikut akses loginnya:\n\n${captionText}` }, { quoted: m });
     }
 };
 
