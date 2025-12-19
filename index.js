@@ -8,6 +8,7 @@ const sharp = require('sharp');
 const axios = require('axios');
 const smsService = require('./sms_service'); // 1. Import modul SMS terpisah
 const indomaretService = require('./indomaret_service'); // Import modul Indomaret
+const cctvService = require('./cctv_service'); // Import modul CCTV
 
 // --- Konfigurasi Database SQLite ---
 const DB_FILE = 'products.db';
@@ -273,7 +274,7 @@ async function connectToWhatsApp() {
 
             console.log('messages.upsert from=', jid, 'text=', text);
 
-            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n\n📱 *Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n• *.menu* : Tampilkan pesan ini.`;
+            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n\n📱 *Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n🎥 *Fitur CCTV:*\n• .cctv : Lihat akses CCTV\n\n• *.menu* : Tampilkan pesan ini.`;
 
             if (text.toLowerCase() === 'tes') {
                 await sock.sendMessage(jid, { text: `🤖 Bot OK. Koneksi aktif. Halo ${name}!` }, { quoted: msg });
@@ -283,6 +284,12 @@ async function connectToWhatsApp() {
             // --- Integrasi Projek SMS (Terpisah) ---
             // Jika perintah adalah .sms, proses di sini dan stop (return).
             if (await smsService.handleCommand(sock, jid, text, msg)) return;
+
+            // --- Integrasi CCTV ---
+            if (text.toLowerCase() === '.cctv') {
+                await cctvService.handleCctvMenu(sock, jid, msg);
+                return;
+            }
 
             // --- Integrasi Indomaret (Dinonaktifkan) ---
             // Command: .indo <permalink>
