@@ -51,7 +51,7 @@ function getListingCaption(plu) {
                 const retur = row['RETUR'];
 
                 // Format Caption
-                const caption = `${nama}\nRak: ${rak} | Shelf: ${shelf} | Baris: ${baris}\nRetur: ${retur}`;
+                const caption = `*${nama}*\n*Rak:* ${rak} | *Shelf:* ${shelf} | *Baris:* ${baris}\n*Retur:* ${retur}`;
                 resolve(caption);
             } else {
                 // Data tidak ditemukan

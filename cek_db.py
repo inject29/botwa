@@ -44,7 +44,7 @@ def test_database_content():
             
             if not df_res.empty:
                 r = df_res.iloc[0]
-                caption = f"{r['NAMA BARANG']}\nRak: {r['RAK']} | Shelf: {r['SHELFING']} | Baris: {r['BARIS']}\nRetur: {r['RETUR']}"
+                caption = f"*{r['NAMA BARANG']}*\n*Rak:* {r['RAK']} | *Shelf:* {r['SHELFING']} | *Baris:* {r['BARIS']}\n*Retur:* {r['RETUR']}"
                 print(f"PLU: {test_plu}")
                 print("-" * 40)
                 print(caption)

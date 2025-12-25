@@ -30,7 +30,7 @@ def get_listing_caption(plu):
                 retur = result[5]
                 
                 # Format Caption sesuai permintaan (di bawah gambar)
-                caption = f"{nama}\nRak: {rak} | Shelf: {shelf} | Baris: {baris}\nRetur: {retur}"
+                caption = f"*{nama}*\n*Rak:* {rak} | *Shelf:* {shelf} | *Baris:* {baris}\n*Retur:* {retur}"
                 return caption
             else:
                 return None # Data tidak ditemukan

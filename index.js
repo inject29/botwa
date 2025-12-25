@@ -386,7 +386,7 @@ async function connectToWhatsApp() {
                         const finalImageBuffer = await createProductImage(product, text);
                         
                         // Ambil info tambahan dari Listing DB (Rak, Shelf, dll)
-                        let captionText = `✅ Produk Ditemukan oleh ${name}: ${text}`;
+                        let captionText = `✅ *Produk Ditemukan oleh ${name}:* ${text}`;
                         const listingInfo = await getListingCaption(product.plu || text);
                         if (listingInfo) {
                             captionText += `\n\n${listingInfo}`;
