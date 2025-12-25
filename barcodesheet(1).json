@@ -4032,12 +4032,6 @@
     "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/10019615_1.jpg"
   },
   {
-    "plu": "10019725",
-    "barcode": "4902430026888",
-    "nama": "Rejoice Shampoo Rich 150Ml",
-    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/10019725_1.jpg"
-  },
-  {
     "plu": "10019884",
     "barcode": "8993110010743",
     "nama": "So Good Chicken Nugget Dino Bites Original 400G",
@@ -7882,12 +7876,6 @@
     "barcode": "9556006060667",
     "nama": "Johnsons Baby Bedtime Hair & Body Bath 400mL",
     "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20018225_1.jpg"
-  },
-  {
-    "plu": "20018270",
-    "barcode": "8992696418509",
-    "nama": "",
-    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200182701.jpg"
   },
   {
     "plu": "20018272",
@@ -38286,12 +38274,6 @@
     "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201343101.jpg"
   },
   {
-    "plu": "20134318",
-    "barcode": "8996205032026",
-    "nama": "Jahe Padjajaran Permen Jahe 100G",
-    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20134318_1.jpg"
-  },
-  {
     "plu": "20134319",
     "barcode": "8888021301748",
     "nama": "Energizer Battery Lithium 3V 2016 2'S",
@@ -50788,5 +50770,485 @@
     "barcode": "8991912161014",
     "nama": "",
     "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200336911.jpg"
+  },
+  {
+    "plu": "20102460",
+    "barcode": "034399",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201024601.jpg"
+  },
+  {
+    "plu": "20099792",
+    "barcode": "8997227891271",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200997921.jpg"
+  },
+  {
+    "plu": "20124751",
+    "barcode": "8997204770452",
+    "nama": "Ladang Lima Cookies Blackthins 65g",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20124751_1.jpg"
+  },
+  {
+    "plu": "20140416",
+    "barcode": "8999999612511",
+    "nama": "PEPSODENT ORANGE 45G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201404161.jpg"
+  },
+  {
+    "plu": "20140415",
+    "barcode": "8999999612528",
+    "nama": "PEPSODENT BB.GUM 45G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201404151.jpg"
+  },
+  {
+    "plu": "20140265",
+    "barcode": "8997013661804",
+    "nama": "VEEV ONE 1000 LT.TEA",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201402651.jpg"
+  },
+  {
+    "plu": "20139129",
+    "barcode": "0721688100522",
+    "nama": "MAIRA BOLU BOLU 35G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201391291.jpg"
+  },
+  {
+    "plu": "20065602",
+    "barcode": "6902395361145",
+    "nama": "Maybelline Rebel Bouquet Lipstick",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200656021.jpg"
+  },
+  {
+    "plu": "20133942",
+    "barcode": "045064",
+    "nama": "Y/CHOICE, NASI PUTIH",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201339421.jpg"
+  },
+  {
+    "plu": "20112946",
+    "barcode": "8996576586227",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201129461.jpg"
+  },
+  {
+    "plu": "20140799",
+    "barcode": "8999999615697",
+    "nama": "Lux Brightening Serum Body Wash Sandalwood 360G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140799_1.jpg"
+  },
+  {
+    "plu": "20138875",
+    "barcode": "8998866629638",
+    "nama": "Giv Body Wash Goat's Milk & Almond Oil 400mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20138875_1.jpg"
+  },
+  {
+    "plu": "20135211",
+    "barcode": "8992946534461",
+    "nama": "ZEN BW A.BAC SHIS380",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201352111.jpg"
+  },
+  {
+    "plu": "20139749",
+    "barcode": "046513",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201397491.jpg"
+  },
+  {
+    "plu": "20140262",
+    "barcode": "8999909014725",
+    "nama": "Marlboro Rokok Filter The Edition Gold 20'S",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140262_1.jpg"
+  },
+  {
+    "plu": "20140798",
+    "barcode": "4897144700493",
+    "nama": "Glad2glow Facial Wash Acne Cleanser Matcha Salicylic Acid 80mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140798_1.jpg"
+  },
+  {
+    "plu": "20026807",
+    "barcode": "4964549002313",
+    "nama": "KEN/M OBENG SET MN6",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200268071.jpg"
+  },
+  {
+    "plu": "20140777",
+    "barcode": "044431",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201407771.jpg"
+  },
+  {
+    "plu": "20140077",
+    "barcode": "8994755000243",
+    "nama": "Good Time Cookies Share Pack 159g",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140077_1.jpg"
+  },
+  {
+    "plu": "20140185",
+    "barcode": "8991001664112",
+    "nama": "Silverqueen Chocolate Chunky Minis 10x8g",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140185_1.jpg"
+  },
+  {
+    "plu": "10019725",
+    "barcode": "4902430428316",
+    "nama": "Rejoice Shampoo Rich 150Ml",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/10019725_1.jpg"
+  },
+  {
+    "plu": "20140791",
+    "barcode": "8999999215262",
+    "nama": "Dove Derma Shampoo Hairfall Control Biotin 155mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140791_1.jpg"
+  },
+  {
+    "plu": "20140263",
+    "barcode": "8992761002114",
+    "nama": "Frestea Minuman Teh Blackcurrant 500mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140263_1.jpg"
+  },
+  {
+    "plu": "20140677",
+    "barcode": "0089686385007",
+    "nama": "INDOFOOD TABURI, BUMBU TABUR SERBAGUNA GAS PEDAS 25",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201406771.jpg"
+  },
+  {
+    "plu": "20112474",
+    "barcode": "8888166350717",
+    "nama": "Nissin Biscuit Walens Assorted 600g",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20112474_1.jpg"
+  },
+  {
+    "plu": "20140010",
+    "barcode": "8993319730435",
+    "nama": "GIZZI, MILK WAFER SELECTION MTCHA KRMA COKL 240g KL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201400101.jpg"
+  },
+  {
+    "plu": "20018270",
+    "barcode": "8997212800295",
+    "nama": "FOX'S, CANDY CRYSTAL CLEAR BERRIES 170g KLG",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200182701.jpg"
+  },
+  {
+    "plu": "20140801",
+    "barcode": "8994096113077",
+    "nama": "Indomaret Toilet Tissue Roll 8's",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140801_1.jpg"
+  },
+  {
+    "plu": "20140807",
+    "barcode": "8997017643813",
+    "nama": "Braven Extrait De Parfum Aqua 100mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140807_1.jpg"
+  },
+  {
+    "plu": "20134927",
+    "barcode": "8998866202299",
+    "nama": "SEDAP KCP MNS 270G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201349271.jpg"
+  },
+  {
+    "plu": "20128924",
+    "barcode": "8993883950079",
+    "nama": "Alamii Snack Cheese Puffs 15G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20128924_1.jpg"
+  },
+  {
+    "plu": "20140456",
+    "barcode": "8998288227009",
+    "nama": "Wong Coco Sari Kelapa Pedas 220g",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201404561.jpg"
+  },
+  {
+    "plu": "20140757",
+    "barcode": "044356",
+    "nama": "Northland Toys Action Figure Eschatology",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140757_1.jpg"
+  },
+  {
+    "plu": "20089827",
+    "barcode": "8992727006286",
+    "nama": "Kao Attack Detergent Cair Batik Care 400mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20089827_1.jpg"
+  },
+  {
+    "plu": "10015648",
+    "barcode": "8999269460040",
+    "nama": "S-26 Promil Gold Tahap 1 0-6 Bulan 900g",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/10015648_1.jpg"
+  },
+  {
+    "plu": "20063486",
+    "barcode": "8996001305089",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200634861.jpg"
+  },
+  {
+    "plu": "20103857",
+    "barcode": "2108211250004",
+    "nama": "22 Seafood Kakap Putih Fillet 500G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20103857_1.jpg"
+  },
+  {
+    "plu": "20140687",
+    "barcode": "0194735405978",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201406871.jpg"
+  },
+  {
+    "plu": "20133786",
+    "barcode": "042439",
+    "nama": "NORTH POP UP FR/FROG",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201337861.jpg"
+  },
+  {
+    "plu": "20133771",
+    "barcode": "042470",
+    "nama": "Northland Toys Hip Hop Boy Dressing Figure",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20133771_1.jpg"
+  },
+  {
+    "plu": "20140329",
+    "barcode": "6972984886465",
+    "nama": "Blokees Hero Infinity",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140329_1.jpg"
+  },
+  {
+    "plu": "20140691",
+    "barcode": "0194735000388",
+    "nama": "Hot Wheels 58th Anniversary Hdh54 Assorted",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140691_1.jpg"
+  },
+  {
+    "plu": "20140693",
+    "barcode": "0194735000395",
+    "nama": "HW FAST&F 25TH ANNIV",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201406931.jpg"
+  },
+  {
+    "plu": "20140695",
+    "barcode": "0194735359134",
+    "nama": "HW PANTONE JKY47",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201406951.jpg"
+  },
+  {
+    "plu": "20140773",
+    "barcode": "044430",
+    "nama": "Northland Toys Playset Tool Home Engineer",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140773_1.jpg"
+  },
+  {
+    "plu": "20140769",
+    "barcode": "044401",
+    "nama": "Northland Toys Pull Back Aeroplane",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140769_1.jpg"
+  },
+  {
+    "plu": "20140455",
+    "barcode": "8994458251386",
+    "nama": "Indomaret Stick Roll Cokelat 18X10G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140455_1.jpg"
+  },
+  {
+    "plu": "20134318",
+    "barcode": "0661706054362",
+    "nama": "Jahe Padjajaran Permen Jahe 100G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20134318_1.jpg"
+  },
+  {
+    "plu": "20140175",
+    "barcode": "8993560155018",
+    "nama": "VEET SENSITIF 25G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201401751.jpg"
+  },
+  {
+    "plu": "20140102",
+    "barcode": "8997226228924",
+    "nama": "Herborist Body Lotion 200mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140102_1.jpg"
+  },
+  {
+    "plu": "20140795",
+    "barcode": "8993200670499",
+    "nama": "Cimory Fresh Milk Uht No Added Sugar Chocolate 225mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140795_1.jpg"
+  },
+  {
+    "plu": "20101108",
+    "barcode": "036598",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201011081.jpg"
+  },
+  {
+    "plu": "20140141",
+    "barcode": "8991906106267",
+    "nama": "Djarum Rokok Kretek D Wraps 12's",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140141_1.jpg"
+  },
+  {
+    "plu": "20119953",
+    "barcode": "045489",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201199531.jpg"
+  },
+  {
+    "plu": "20140261",
+    "barcode": "8999909014695",
+    "nama": "Marlboro Rokok Filter The Edition Red 20'S",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140261_1.jpg"
+  },
+  {
+    "plu": "20140912",
+    "barcode": "8998898101409",
+    "nama": "Sido Muncul Jamu Tolak Angin Cair + Madu 15mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140912_1.jpg"
+  },
+  {
+    "plu": "20113404",
+    "barcode": "8992902211665",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201134041.jpg"
+  },
+  {
+    "plu": "20052867",
+    "barcode": "8992304014420",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200528671.jpg"
+  },
+  {
+    "plu": "20101256",
+    "barcode": "8998866820400",
+    "nama": "Glico Wings Ice Cream Frost Bite Cookies & Cream 60Ml Pck",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20101256_1.jpg"
+  },
+  {
+    "plu": "20140184",
+    "barcode": "8998866820790",
+    "nama": "Glico Wings Ice Cream Frost Bite Kopi Jelly Gula Aren 60mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140184_1.jpg"
+  },
+  {
+    "plu": "20140363",
+    "barcode": "9556156046115",
+    "nama": "Larisst Kaos Kaki Ankle (1+1) No. 25-26",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140363_1.jpg"
+  },
+  {
+    "plu": "20039864",
+    "barcode": "9556156046115",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200398641.jpg"
+  },
+  {
+    "plu": "20140793",
+    "barcode": "8993200670529",
+    "nama": "Cimory Fresh Milk Uht No Added Sugar Matcha 225mL",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140793_1.jpg"
+  },
+  {
+    "plu": "20140794",
+    "barcode": "8993200670536",
+    "nama": "Cimory Fresh Milk Uht No Added Sugar Marie Regal 225Ml",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140794_1.jpg"
+  },
+  {
+    "plu": "20140802",
+    "barcode": "8994096113091",
+    "nama": "Indomaret Tisu Dapur 2 pcs",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201408021.jpg"
+  },
+  {
+    "plu": "20025701",
+    "barcode": "0117472342177",
+    "nama": "Dolpin Garam Meja 200G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20025701_1.jpg"
+  },
+  {
+    "plu": "20140378",
+    "barcode": "8991906106304",
+    "nama": "Djarum Super Rokok Kretek Wrap 12's",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140378_1.jpg"
+  },
+  {
+    "plu": "20140477",
+    "barcode": "8994460553287",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201404771.jpg"
+  },
+  {
+    "plu": "20020285",
+    "barcode": "8992753017201",
+    "nama": "Ovaltine Susu Uht Chocolate Malt 200Ml",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20020285_1.jpg"
+  },
+  {
+    "plu": "20128877",
+    "barcode": "8710103938781",
+    "nama": "AVENT STHR SOFT 0-6M BOY 1P HELLO CAV151",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201288771.jpg"
+  },
+  {
+    "plu": "20096059",
+    "barcode": "8991001112804",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200960591.jpg"
+  },
+  {
+    "plu": "20140680",
+    "barcode": "8992946534485",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201406801.jpg"
+  },
+  {
+    "plu": "20140796",
+    "barcode": "8999999605766",
+    "nama": "SARIWANGI MATCHA 5'S",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201407961.jpg"
+  },
+  {
+    "plu": "20124633",
+    "barcode": "043251",
+    "nama": "Browny Cookies Original 50G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20124633_1.jpg"
+  },
+  {
+    "plu": "20071776",
+    "barcode": "8993176120202",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200717761.jpg"
+  },
+  {
+    "plu": "20113084",
+    "barcode": "7237845395463",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/201130841.jpg"
+  },
+  {
+    "plu": "20106861",
+    "barcode": "4901080952011",
+    "nama": "Hoy Hoy Trap A Roach",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20106861_1.jpg"
+  },
+  {
+    "plu": "20099958",
+    "barcode": "8997227891219",
+    "nama": "",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/200999581.jpg"
+  },
+  {
+    "plu": "20140800",
+    "barcode": "8999998615673",
+    "nama": "Lux Brightening Serum Body Wash Freesia 360G",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140800_1.jpg"
+  },
+  {
+    "plu": "20140731",
+    "barcode": "8721274611281",
+    "nama": "Wall's Ice Cream Avocado Brownie 350Ml",
+    "gambar": "https://cdn-klik.klikindomaret.com/klik-catalog/product/20140731_1.jpg"
   }
 ]
