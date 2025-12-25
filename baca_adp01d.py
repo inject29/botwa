@@ -10,7 +10,8 @@ except ImportError:
     sys.exit(1)
 
 # Path file sesuai yang terlihat di terminal/konteks
-file_path = '/home/oem/Documents/bail/Listing/ADP01D.xlsx'
+base_dir = '/botwa'
+file_path = os.path.join(base_dir, 'Listing', 'ADP01D.xlsx')
 
 def baca_file_spesifik():
     if not os.path.exists(file_path):

@@ -3,7 +3,8 @@ from sqlalchemy import create_engine
 import os
 
 # Lokasi database (sesuaikan jika folder berbeda)
-db_path = '/home/oem/Documents/bail/listing.db'
+base_dir = '/botwa'
+db_path = os.path.join(base_dir, 'listing.db')
 
 def test_database_content():
     # 1. Cek keberadaan file database

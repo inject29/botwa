@@ -4,8 +4,9 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def import_all_listings():
-    folder_path = '/home/oem/Documents/bail/Listing'
-    db_path = '/home/oem/Documents/bail/listing.db'
+    base_dir = '/botwa'
+    folder_path = os.path.join(base_dir, 'Listing')
+    db_path = os.path.join(base_dir, 'listing.db')
     
     # Cek folder
     if not os.path.exists(folder_path):
