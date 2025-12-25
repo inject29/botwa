@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def import_all_listings():
-    base_dir = '/botwa/Listing'
+    base_dir = '/botwa/'
     folder_path = os.path.join(base_dir, 'Listing')
     db_path = os.path.join(base_dir, 'listing.db')
     
