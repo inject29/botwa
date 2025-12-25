@@ -9,6 +9,7 @@ const axios = require('axios');
 const smsService = require('./sms_service'); // 1. Import modul SMS terpisah
 const indomaretService = require('./indomaret_service'); // Import modul Indomaret
 const cctvService = require('./cctv_service'); // Import modul CCTV
+const { getListingCaption } = require('./listing_service'); // Import modul Listing
 
 // --- Konfigurasi Database SQLite ---
 const DB_FILE = 'products.db';
@@ -384,10 +385,17 @@ async function connectToWhatsApp() {
                         // Generate the composite image (Standard Mode - No Qty)
                         const finalImageBuffer = await createProductImage(product, text);
                         
+                        // Ambil info tambahan dari Listing DB (Rak, Shelf, dll)
+                        let captionText = `✅ Produk Ditemukan oleh ${name}: ${text}`;
+                        const listingInfo = await getListingCaption(product.plu || text);
+                        if (listingInfo) {
+                            captionText += `\n\n${listingInfo}`;
+                        }
+
                         // Send the single composite image
                         await sock.sendMessage(jid, {
                             image: finalImageBuffer,
-                            caption: `✅ Produk Ditemukan oleh ${name}: ${text}`
+                            caption: captionText
                         }, { quoted: msg });
 
                     } else {
