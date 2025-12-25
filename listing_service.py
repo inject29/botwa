@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, text
 import os
 
 # Lokasi database listing
-base_dir = '/botwa'
+base_dir = '/home/ubuntu/botwa'
 DB_PATH = os.path.join(base_dir, 'listing.db')
 
 def get_listing_caption(plu):

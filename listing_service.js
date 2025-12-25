@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 
 // Path ke database listing.db (Pastikan path ini benar dan sama dengan script Python)
-const DB_PATH = '/botwa/listing.db';
+const DB_PATH = '/home/ubuntu/botwa/listing.db';
 
 /**
  * Mengambil caption lengkap (Nama, Rak, Shelf, Baris, Retur) berdasarkan PLU.

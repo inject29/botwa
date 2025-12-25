@@ -10,7 +10,7 @@ except ImportError:
     sys.exit(1)
 
 # Path file sesuai yang terlihat di terminal/konteks
-base_dir = '/botwa'
+base_dir = '/home/ubuntu/botwa'
 file_path = os.path.join(base_dir, 'Listing', 'ADP01D.xlsx')
 
 def baca_file_spesifik():
