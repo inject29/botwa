@@ -6,7 +6,7 @@ const app = express();
 const PORT = 3000; // Port untuk akses web (Bisa diganti jika bentrok)
 
 // Path Database (Menggunakan path absolut agar aman)
-const BASE_DIR = '/home/ubuntu/botwa';
+const BASE_DIR = __dirname;
 const DB_LISTING = path.join(BASE_DIR, 'listing.db');
 const DB_PRODUCTS = path.join(BASE_DIR, 'products.db');
 
