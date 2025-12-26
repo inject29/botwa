@@ -19,6 +19,12 @@ if (!fs.existsSync(DB_LISTING) || !fs.existsSync(DB_PRODUCTS)) {
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 
+// Middleware Logging (Tambahkan ini untuk melihat request masuk di terminal)
+app.use((req, res, next) => {
+    console.log(`[LOG] Akses masuk dari IP ${req.ip}: ${req.method} ${req.url}`);
+    next();
+});
+
 // --- CSS Sederhana untuk Tampilan ---
 const style = `
     <style>
