@@ -107,11 +107,10 @@ async function createProductImage(product, queryText, qty = null) {
 
 
         // 2. Generate Barcode
-        // Jika Qty ada (Mode Bulk), kita ubah isi barcode menjadi format QTY*PLU
-        // Ini adalah trik "Keyboard Wedge": Scanner seolah-olah mengetik Angka Jumlah, lalu tanda Kali, lalu Kode Barang.
-        // Pastikan mesin kasir Anda menggunakan tombol '*' untuk mengalikan jumlah.
-        const codeToRender = qty ? `${qty}*${queryText}` : (barcode || String(queryText));
-        const humanReadableText = qty ? `${queryText} (QTY: ${qty})` : codeToRender;
+        // Revisi: Menggunakan barcode murni (tanpa QTY*) agar kompatibel dengan scanner yang tidak support macro '*'.
+        // QTY tetap ditampilkan secara visual di label untuk informasi manual.
+        const codeToRender = barcode || String(queryText);
+        const humanReadableText = qty ? `${codeToRender} (QTY: ${qty})` : codeToRender;
 
         const barcodeBuffer = await new Promise((resolve, reject) => {
             bwipjs.toBuffer({
@@ -303,8 +302,10 @@ async function connectToWhatsApp() {
                 const code = args[1];
                 const qty = args[2];
 
-                if (code && /^\d+$/.test(code)) {
-                    const quantity = parseInt(qty) || 1;
+                if (code) {
+                    let quantity = parseInt(qty);
+                    if (isNaN(quantity) || quantity < 1) quantity = 1;
+                    console.log(`[BULK] Request dari ${name}: Code=${code}, Qty=${quantity}`);
                     
                     await sock.sendMessage(jid, { text: `⏳ Sedang memproses oleh ${name}...` }, { quoted: msg });
                     try {
