@@ -77,7 +77,7 @@ async function createProductImage(product, queryText, qty = null) {
                     const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(productImage)}&output=png`;
                     const response = await axios.get(proxyUrl, { 
                         responseType: 'arraybuffer',
-                        timeout: 15000
+                        timeout: 30000  // Increased timeout to 30 seconds
                     });
                     productImageBuffer = Buffer.from(response.data);
                 } catch (proxyError) {
