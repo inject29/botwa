@@ -49,7 +49,7 @@ function searchProductByName(query) {
 }
 
 async function sendBarcodeFromGenerator(sock, jid, msg) {
-    const barcodeDir = './barcode_generator';
+    const barcodeDir = './Barcode_generator';
     
     // Deteksi apakah dari group atau private
     const isGroup = jid.endsWith('@g.us');
@@ -58,7 +58,7 @@ async function sendBarcodeFromGenerator(sock, jid, msg) {
     try {
         // Cek apakah folder ada
         if (!fs.existsSync(barcodeDir)) {
-            await sock.sendMessage(targetJid, { text: '❌ Folder barcode_generator tidak ditemukan.' }, { quoted: msg });
+            await sock.sendMessage(targetJid, { text: '❌ Folder Barcode_generator tidak ditemukan.' }, { quoted: msg });
             return;
         }
 
@@ -69,14 +69,14 @@ async function sendBarcodeFromGenerator(sock, jid, msg) {
         });
 
         if (files.length === 0) {
-            await sock.sendMessage(targetJid, { text: '📭 Tidak ada file barcode di folder barcode_generator.' }, { quoted: msg });
+            await sock.sendMessage(targetJid, { text: '📭 Tidak ada file barcode di folder Barcode_generator.' }, { quoted: msg });
             return;
         }
 
         // Kirim pesan konfirmasi
         const confirmMsg = isGroup 
             ? `📤 Mengirim ${files.length} barcode ke pesan pribadi Anda...`
-            : `📤 Mengirim ${files.length} barcode dari folder barcode_generator...`;
+            : `📤 Mengirim ${files.length} barcode dari folder Barcode_generator...`;
         
         await sock.sendMessage(targetJid, { text: confirmMsg }, { quoted: msg });
 
@@ -332,7 +332,7 @@ async function connectToWhatsApp() {
 
             console.log('messages.upsert from=', jid, 'text=', text);
 
-            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n• *.aktiva* : Kirim semua barcode dari folder barcode_generator.\n  (Jika di group, dikirim ke pesan pribadi)\n🎥 *Fitur CCTV:*\n• .cctv : Lihat akses CCTV\n\n• *.menu* : Tampilkan pesan ini.`;
+            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n• *.aktiva* : Kirim semua barcode dari folder Barcode_generator.\n  (Jika di group, dikirim ke pesan pribadi)\n🎥 *Fitur CCTV:*\n• .cctv : Lihat akses CCTV\n\n• *.menu* : Tampilkan pesan ini.`;
 
             if (text.toLowerCase() === 'tes') {
                 await sock.sendMessage(jid, { text: `🤖 Bot OK. Koneksi aktif. Halo ${name}!` }, { quoted: msg });
