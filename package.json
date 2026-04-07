@@ -11,15 +11,15 @@
   "license": "ISC",
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
-    "qrcode-terminal": "^0.12.0",
-    "bwip-js": "^2.0.10",
-    "sharp": "^0.33.4",
     "axios": "^1.7.2",
-    "sqlite3": "^5.1.6",
+    "bwip-js": "^2.0.10",
+    "express": "^5.2.1",
     "pino": "^8.17.2",
     "puppeteer": "^21.6.1",
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "qrcode-terminal": "^0.12.0",
+    "sharp": "^0.33.4",
+    "sqlite3": "^5.1.6"
   }
 }
-
