@@ -49,5 +49,25 @@ else
   npm install
 fi
 
+echo "🗄️ Memastikan modul sqlite3 Node tersedia..."
+if ! npm list sqlite3 --depth=0 >/dev/null 2>&1; then
+  echo "📦 Modul sqlite3 belum ada, menginstall sqlite3..."
+  npm install sqlite3
+else
+  echo "✅ Modul sqlite3 sudah terpasang."
+fi
+
+echo "📚 Membuat atau memperbarui database products.db..."
+if [ -f "barcodesheet(1).json" ]; then
+  if [ ! -f "products.db" ]; then
+    echo "📥 File JSON ditemukan, membuat database SQLite baru..."
+    node init_db.js
+  else
+    echo "✅ products.db sudah ada. Jika ingin membuat ulang database, jalankan node init_db.js secara manual."
+  fi
+else
+  echo "⚠️ File barcodesheet(1).json tidak ditemukan. Database products.db tidak dapat dibuat otomatis."
+fi
+
 echo "✅ Semua instalasi selesai."
 echo "👉 Jalankan bot dengan: node index.js"

@@ -48,6 +48,64 @@ function searchProductByName(query) {
     });
 }
 
+async function sendBarcodeFromGenerator(sock, jid, msg) {
+    const barcodeDir = './barcode_generator';
+    
+    // Deteksi apakah dari group atau private
+    const isGroup = jid.endsWith('@g.us');
+    const targetJid = isGroup ? msg.key.participant : jid; // Kirim ke private jika dari group
+    
+    try {
+        // Cek apakah folder ada
+        if (!fs.existsSync(barcodeDir)) {
+            await sock.sendMessage(targetJid, { text: '❌ Folder barcode_generator tidak ditemukan.' }, { quoted: msg });
+            return;
+        }
+
+        // Baca isi folder
+        const files = fs.readdirSync(barcodeDir).filter(file => {
+            const ext = file.toLowerCase();
+            return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg');
+        });
+
+        if (files.length === 0) {
+            await sock.sendMessage(targetJid, { text: '📭 Tidak ada file barcode di folder barcode_generator.' }, { quoted: msg });
+            return;
+        }
+
+        // Kirim pesan konfirmasi
+        const confirmMsg = isGroup 
+            ? `📤 Mengirim ${files.length} barcode ke pesan pribadi Anda...`
+            : `📤 Mengirim ${files.length} barcode dari folder barcode_generator...`;
+        
+        await sock.sendMessage(targetJid, { text: confirmMsg }, { quoted: msg });
+
+        // Kirim setiap file barcode
+        for (const file of files) {
+            const filePath = `${barcodeDir}/${file}`;
+            try {
+                const imageBuffer = fs.readFileSync(filePath);
+                await sock.sendMessage(targetJid, { 
+                    image: imageBuffer, 
+                    caption: `📊 Barcode: ${file}` 
+                });
+                
+                // Delay kecil untuk menghindari spam
+                await delay(1000);
+            } catch (error) {
+                console.error(`Error sending barcode ${file}:`, error);
+                await sock.sendMessage(targetJid, { text: `❌ Gagal mengirim ${file}: ${error.message}` });
+            }
+        }
+
+        await sock.sendMessage(targetJid, { text: '✅ Selesai mengirim semua barcode.' });
+
+    } catch (error) {
+        console.error('Error in sendBarcodeFromGenerator:', error);
+        await sock.sendMessage(targetJid, { text: `❌ Terjadi kesalahan: ${error.message}` });
+    }
+}
+
 async function createProductImage(product, queryText, qty = null) {
     try {
         const { nama: productName, gambar: productImage, barcode, plu } = product;
@@ -274,7 +332,7 @@ async function connectToWhatsApp() {
 
             console.log('messages.upsert from=', jid, 'text=', text);
 
-            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n\n📱 *Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n🎥 *Fitur CCTV:*\n• .cctv : Lihat akses CCTV\n\n• *.menu* : Tampilkan pesan ini.`;
+            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n• *.barcode* : Kirim semua barcode dari folder barcode_generator.\n  (Jika di group, dikirim ke pesan pribadi)\n\n📱 *Fitur SMS / OTP:*\n• .saldo : Cek saldo\n• .layanan : Cek layanan\n• .order <kode> : Beli nomor\n• .otp : Cek SMS masuk\n• .cancel : Batal order\n\n🎥 *Fitur CCTV:*\n• .cctv : Lihat akses CCTV\n\n• *.menu* : Tampilkan pesan ini.`;
 
             if (text.toLowerCase() === 'tes') {
                 await sock.sendMessage(jid, { text: `🤖 Bot OK. Koneksi aktif. Halo ${name}!` }, { quoted: msg });
@@ -288,6 +346,12 @@ async function connectToWhatsApp() {
             // --- Integrasi CCTV ---
             if (text.toLowerCase() === '.cctv') {
                 await cctvService.handleCctvMenu(sock, jid, msg);
+                return;
+            }
+
+            // --- Fitur Kirim Barcode dari Folder ---
+            if (text.toLowerCase() === '.barcode') {
+                await sendBarcodeFromGenerator(sock, jid, msg);
                 return;
             }
 
