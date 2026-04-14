@@ -15,6 +15,8 @@ const { getListingCaption } = require('./listing_service'); // Import modul List
 // --- Konfigurasi Database SQLite ---
 const DB_FILE = 'products.db';
 const AUTH_INFO_PATH = 'baileys_auth_info';
+const RECENT_CHATS_FILE = 'recent_chats.json';
+let hasSentOnlineBroadcast = false;
 
 const db = new sqlite3.Database(DB_FILE, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
@@ -47,6 +49,65 @@ function searchProductByName(query) {
             resolve(rows || []);
         });
     });
+}
+
+function loadRecentChats() {
+    try {
+        if (!fs.existsSync(RECENT_CHATS_FILE)) return {};
+        const raw = fs.readFileSync(RECENT_CHATS_FILE, 'utf-8');
+        return raw ? JSON.parse(raw) : {};
+    } catch (err) {
+        console.warn('⚠️ Gagal membaca recent chats:', err.message);
+        return {};
+    }
+}
+
+function saveRecentChats(chats) {
+    try {
+        fs.writeFileSync(RECENT_CHATS_FILE, JSON.stringify(chats, null, 2), 'utf-8');
+    } catch (err) {
+        console.warn('⚠️ Gagal menyimpan recent chats:', err.message);
+    }
+}
+
+function recordRecentChat(jid) {
+    if (!jid) return;
+    // Only personal chats (WhatsApp number IDs)
+    if (!jid.endsWith('@s.whatsapp.net') && !jid.endsWith('@c.us')) return;
+
+    const recentChats = loadRecentChats();
+    recentChats[jid] = Date.now();
+    saveRecentChats(recentChats);
+}
+
+function getRecentChatJids(days = 2) {
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const recentChats = loadRecentChats();
+    return Object.entries(recentChats)
+        .filter(([_, timestamp]) => timestamp >= cutoff)
+        .map(([jid]) => jid);
+}
+
+async function broadcastOnlineToRecentChats(sock) {
+    const jids = getRecentChatJids(2);
+    if (jids.length === 0) {
+        console.log('Tidak ada nomor chat dalam 2 hari terakhir untuk broadcast online.');
+        return;
+    }
+
+    console.log(`📣 Mengirim broadcast online ke ${jids.length} nomor...`);
+    const broadcastMessage = '🤖 Bot sudah online kembali. Silakan kirimkan kode produk atau perintah yang Anda perlukan.';
+
+    for (const jid of jids) {
+        try {
+            await sock.sendMessage(jid, { text: broadcastMessage });
+            await delay(1000);
+        } catch (err) {
+            console.warn(`⚠️ Gagal mengirim broadcast ke ${jid}: ${err.message}`);
+        }
+    }
+
+    console.log('✅ Broadcast online selesai.');
 }
 
 async function sendBarcodeFromGenerator(sock, jid, msg) {
@@ -320,6 +381,10 @@ async function connectToWhatsApp() {
 
         } else if (connection === 'open') {
             console.log('✅ Bot WhatsApp telah disambungkan dan siap menerima pesan!');
+            if (!hasSentOnlineBroadcast) {
+                hasSentOnlineBroadcast = true;
+                await broadcastOnlineToRecentChats(sock);
+            }
         }
     });
 
@@ -333,6 +398,9 @@ async function connectToWhatsApp() {
 
             const jid = msg.key.remoteJid || '';
             if (jid === 'status@broadcast') return;
+
+            // Simpan nomor chat masuk untuk broadcast online kembali
+            recordRecentChat(jid);
 
             // Abaikan pesan lama (lebih dari 1 menit) untuk menghindari memproses pesan tertunda saat startup
             if (msg.messageTimestamp && msg.messageTimestamp * 1000 < Date.now() - 60000) return;
