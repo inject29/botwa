@@ -4,6 +4,7 @@ const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
+const readline = require('readline');
 const bwipjs = require('bwip-js');
 const sharp = require('sharp');
 const axios = require('axios');
@@ -17,6 +18,14 @@ const DB_FILE = 'products.db';
 const AUTH_INFO_PATH = 'baileys_auth_info';
 const RECENT_CHATS_FILE = 'recent_chats.json';
 let hasSentOnlineBroadcast = false;
+let isBotConnected = false;
+let initialPairPhone = null;
+let initialPairKey = 'ELAINA01';
+let initialPairMode = false;
+let initialPairRequested = false;
+let aiMode = false;
+let autoReactEmoji = '❤️';
+let autoReactEnabled = true;
 
 const db = new sqlite3.Database(DB_FILE, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
@@ -67,6 +76,132 @@ function saveRecentChats(chats) {
         fs.writeFileSync(RECENT_CHATS_FILE, JSON.stringify(chats, null, 2), 'utf-8');
     } catch (err) {
         console.warn('⚠️ Gagal menyimpan recent chats:', err.message);
+    }
+}
+
+function askQuestion(query) {
+    if (!process.stdin.isTTY) return Promise.resolve('');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    return new Promise((resolve) => {
+        rl.question(query, (answer) => {
+            rl.close();
+            resolve(answer.trim());
+        });
+    });
+}
+
+async function promptInitialPairingMode() {
+    const hasAuthFolder = fs.existsSync(AUTH_INFO_PATH);
+    if (hasAuthFolder) return;
+
+    console.log('⚠️ Belum ada sesi WhatsApp. Pilih cara setup:');
+    console.log('  1) Scan QR');
+    console.log('  2) Gunakan kode pairing dengan nomor telepon');
+
+    const answer = (await askQuestion('Pilih 1 atau 2 [default 1]: ')) || '1';
+    if (answer === '2' || answer.toLowerCase().startsWith('c')) {
+        initialPairMode = true;
+        const phone = (await askQuestion('Masukkan nomor telepon (contoh 6281234567890): ')).replace(/\D/g, '');
+        if (!phone) {
+            console.log('❌ Nomor telepon tidak valid. Menggunakan QR secara default.');
+            initialPairMode = false;
+            return;
+        }
+        initialPairPhone = phone;
+        const key = (await askQuestion('Masukkan pairing key (default ELAINA01): ')).trim();
+        if (key) initialPairKey = key;
+        console.log(`✅ Pairing mode dipilih untuk ${initialPairPhone}. Kode pairing akan ditampilkan di terminal saat terhubung.`);
+    }
+}
+
+function formatAIMessage(text) {
+    return `🤖 *AI Response:*\n${text}`;
+}
+
+async function sendReaction(sock, jid, msgKey, emoji) {
+    try {
+        await sock.sendMessage(jid, {
+            react: {
+                text: emoji,
+                key: msgKey
+            }
+        });
+    } catch (err) {
+        console.error('Error sending reaction:', err.message);
+    }
+}
+
+function getSpinner(frame) {
+    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    return frames[frame % frames.length];
+}
+
+function getProgressBar(percent) {
+    const filled = Math.floor(percent / 5);
+    const empty = 20 - filled;
+    return `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${percent}%`;
+}
+
+function getAnimatedEmoji(frame) {
+    const emojis = ['🔄', '⏳', '🔃'];
+    return emojis[frame % emojis.length];
+}
+
+async function showLoadingSpinner(sock, jid, initialMsg, duration = 3000) {
+    try {
+        const startTime = Date.now();
+        let frame = 0;
+        let lastMsg = null;
+
+        while (Date.now() - startTime < duration) {
+            const spinner = getSpinner(frame);
+            const text = `${spinner} ${initialMsg}`;
+            
+            if (!lastMsg) {
+                lastMsg = await sock.sendMessage(jid, { text });
+            } else {
+                try {
+                    await sock.sendMessage(jid, { text, edit: lastMsg.key });
+                } catch (err) {
+                    console.warn('Could not edit loading message:', err.message);
+                }
+            }
+            
+            frame++;
+            await delay(100);
+        }
+        return lastMsg;
+    } catch (err) {
+        console.error('Error in loading spinner:', err.message);
+        return null;
+    }
+}
+
+async function showProgressBar(sock, jid, initialMsg, steps = 10, delayMs = 500) {
+    try {
+        let lastMsg = null;
+
+        for (let i = 0; i <= steps; i++) {
+            const percent = Math.floor((i / steps) * 100);
+            const bar = getProgressBar(percent);
+            const text = `${initialMsg}\n${bar}`;
+            
+            if (!lastMsg) {
+                lastMsg = await sock.sendMessage(jid, { text });
+            } else {
+                try {
+                    await sock.sendMessage(jid, { text, edit: lastMsg.key });
+                } catch (err) {
+                    console.warn('Could not edit progress message:', err.message);
+                }
+            }
+            
+            await delay(delayMs);
+        }
+        return lastMsg;
+    } catch (err) {
+        console.error('Error in progress bar:', err.message);
+        return null;
     }
 }
 
@@ -135,21 +270,23 @@ async function sendBarcodeFromGenerator(sock, jid, msg) {
             return;
         }
 
-        // Kirim pesan konfirmasi
+        // Kirim pesan konfirmasi + animated emoji progress
         const confirmMsg = isGroup 
             ? `📤 Mengirim ${files.length} barcode ke pesan pribadi Anda...`
             : `📤 Mengirim ${files.length} barcode dari folder Barcode_generator...`;
         
         await sock.sendMessage(targetJid, { text: confirmMsg }, { quoted: msg });
 
-        // Kirim setiap file barcode
-        for (const file of files) {
+        // Kirim setiap file dengan animated emoji
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
             const filePath = `${barcodeDir}/${file}`;
             try {
                 const imageBuffer = fs.readFileSync(filePath);
+                const progress = Math.floor((i / files.length) * 100);
                 await sock.sendMessage(targetJid, { 
                     image: imageBuffer, 
-                    caption: `📊 Barcode: ${file}` 
+                    caption: `${getAnimatedEmoji(i)} ${i + 1}/${files.length} | 📊 ${file}` 
                 });
                 
                 // Delay kecil untuk menghindari spam
@@ -319,10 +456,15 @@ async function createProductImage(product, queryText, qty = null) {
 // --- Logik Bot Baileys ---
 
 async function connectToWhatsApp() {
+    await promptInitialPairingMode();
+
     const hasAuthFolder = fs.existsSync(AUTH_INFO_PATH);
     if (!hasAuthFolder) {
         console.log('⚠️ Folder sesi belum ditemukan. Jika Anda sudah memiliki sesi dari device lain, copy folder baileys_auth_info ke folder proyek ini.');
         console.log('   Jika belum, bot akan menampilkan QR code untuk pairing.');
+        if (initialPairMode) {
+            console.log('   Opsi pairing code dipilih. Tunggu kode pairing di terminal.');
+        }
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_INFO_PATH);
@@ -338,21 +480,26 @@ async function connectToWhatsApp() {
 
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
+        isBotConnected = connection === 'open';
         
         if (qr) {
-            console.log('\n===========================================');
-            console.log('🚨 SILAKAN PINDAI QR CODE DI BAWAH SEKARANG 🚨');
-            qrcode.generate(qr, { small: true });
-            console.log('===========================================\n');
+            if (!initialPairMode) {
+                console.log('\n===========================================');
+                console.log('🚨 SILAKAN PINDAI QR CODE DI BAWAH SEKARANG 🚨');
+                qrcode.generate(qr, { small: true });
+                console.log('===========================================\n');
 
-            try {
-                const qrFile = 'qr.png';
-                await QRCode.toFile(qrFile, qr, { type: 'png', width: 500 });
-                fs.writeFileSync('qr.txt', qr, 'utf-8');
-                console.log(`✅ QR code saved to ${qrFile} and qr.txt`);
-                console.log('📎 Jika terminal tidak cocok, download file qr.png untuk discan.');
-            } catch (err) {
-                console.error('❌ Gagal menyimpan QR code ke file:', err.message);
+                try {
+                    const qrFile = 'qr.png';
+                    await QRCode.toFile(qrFile, qr, { type: 'png', width: 500 });
+                    fs.writeFileSync('qr.txt', qr, 'utf-8');
+                    console.log(`✅ QR code saved to ${qrFile} and qr.txt`);
+                    console.log('📎 Jika terminal tidak cocok, download file qr.png untuk discan.');
+                } catch (err) {
+                    console.error('❌ Gagal menyimpan QR code ke file:', err.message);
+                }
+            } else {
+                console.log('\n⚠️ QR code tersedia, tetapi pairing code mode dipilih. Abaikan QR ini.\n');
             }
         }
 
@@ -379,7 +526,27 @@ async function connectToWhatsApp() {
                 console.log('🛑 Sesi keluar. Sila jalankan bot secara manual untuk memindai QR code baru.');
             }
 
-        } else if (connection === 'open') {
+        }
+
+        if (initialPairMode && !initialPairRequested && connection === 'connecting') {
+            initialPairRequested = true;
+            if (typeof sock.requestPairingCode === 'function' && initialPairPhone) {
+                console.log(`⏳ Meminta pairing code untuk ${initialPairPhone}...`);
+                try {
+                    const code = await sock.requestPairingCode(initialPairPhone, initialPairKey);
+                    console.log('✅ Pairing Code:', code);
+                    fs.writeFileSync('pairing-code.txt', code, 'utf-8');
+                    console.log('📄 Kode pairing tersimpan di pairing-code.txt');
+                    console.log('Gunakan kode ini di WhatsApp Anda untuk menautkan bot.');
+                } catch (err) {
+                    console.error('❌ Gagal mendapatkan pairing code:', err?.message || err);
+                }
+            } else {
+                console.warn('⚠️ requestPairingCode tidak tersedia di versi Baileys saat ini atau nomor belum diisi.');
+            }
+        }
+
+        if (connection === 'open') {
             console.log('✅ Bot WhatsApp telah disambungkan dan siap menerima pesan!');
             if (!hasSentOnlineBroadcast) {
                 hasSentOnlineBroadcast = true;
@@ -417,11 +584,16 @@ async function connectToWhatsApp() {
 
             console.log('messages.upsert from=', jid, 'text=', text);
 
-            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n• *.aktiva* : Kirim semua barcode dari folder Barcode_generator.\n  (Jika di group, dikirim ke pesan pribadi)\n🎥 *Fitur CCTV:*\n• .cctv : Lihat akses CCTV\n\n• *.menu* : Tampilkan pesan ini.`;
+            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n• *.aktiva* : Kirim semua barcode dari folder Barcode_generator.\n  (Jika di group, dikirim ke pesan pribadi)\n• *.pair <nomor> [key]* : Buat pairing code untuk setup awal saja\n• *.aimode* : Aktifkan/nonaktifkan mode AI\n🎥 *Fitur CCTV:*\n• .cctv : Lihat akses CCTV\n\n• *.menu* : Tampilkan pesan ini.`;
 
             if (text.toLowerCase() === 'tes') {
                 await sock.sendMessage(jid, { text: `🤖 Bot OK. Koneksi aktif. Halo ${name}!` }, { quoted: msg });
                 return;
+            }
+
+            // Auto react ke pesan masuk jika enabled
+            if (autoReactEnabled && msg.key) {
+                await sendReaction(sock, jid, msg.key, autoReactEmoji);
             }
 
             // --- Integrasi Projek SMS (Terpisah) ---
@@ -437,6 +609,72 @@ async function connectToWhatsApp() {
             // --- Fitur Kirim Barcode dari Folder ---
             if (text.toLowerCase() === '.aktiva') {
                 await sendBarcodeFromGenerator(sock, jid, msg);
+                return;
+            }
+
+            // --- Fitur AI Mode Toggle ---
+            if (text.toLowerCase() === '.aimode') {
+                aiMode = !aiMode;
+                const status = aiMode ? '✅ ON' : '❌ OFF';
+                await sock.sendMessage(jid, { text: `🤖 AI Mode ${status}. Setiap pesan bot akan ditandai dengan ikon AI.` }, { quoted: msg });
+                return;
+            }
+
+            // --- Fitur Auto React Toggle ---
+            if (text.toLowerCase() === '.autoreact') {
+                autoReactEnabled = !autoReactEnabled;
+                const status = autoReactEnabled ? '✅ ON' : '❌ OFF';
+                await sock.sendMessage(jid, { text: `👍 Auto React ${status} (Emoji: ${autoReactEmoji})` }, { quoted: msg });
+                return;
+            }
+
+            // --- Fitur Set React Emoji ---
+            if (/^\.setreact\s+/i.test(text)) {
+                const args = text.replace(/^\.setreact\s+/i, '').trim();
+                if (args && args.length <= 2) {
+                    autoReactEmoji = args;
+                    await sock.sendMessage(jid, { text: `✅ Emoji react diubah menjadi: ${autoReactEmoji}` }, { quoted: msg });
+                } else {
+                    await sock.sendMessage(jid, { text: `⚠️ Gunakan: .setreact <emoji>\nContoh: .setreact ❤️` }, { quoted: msg });
+                }
+                return;
+            }
+
+            // --- Fitur Pairing Code ---
+            if (/^\.pair(?:\s+|$)/i.test(text)) {
+                const args = text.trim().split(/\s+/);
+                let targetNumber = args[1];
+                const pairKey = args[2] || 'ELAINA01';
+
+                if (!targetNumber) {
+                    if (jid.endsWith('@s.whatsapp.net')) {
+                        targetNumber = jid.replace('@s.whatsapp.net', '');
+                    }
+                }
+
+                if (hasAuthFolder && isBotConnected) {
+                    await sock.sendMessage(jid, { text: '⚠️ Pairing code hanya diperlukan saat pertama kali menghubungkan bot. Bot sudah memiliki sesi aktif sekarang.' }, { quoted: msg });
+                    return;
+                }
+
+                if (!targetNumber || !/^\d{8,}$/.test(targetNumber)) {
+                    await sock.sendMessage(jid, { text: '⚠️ Gunakan: .pair <nomor> [key]\nContoh: .pair 6281234567890 ELAINA01' }, { quoted: msg });
+                    return;
+                }
+
+                if (typeof sock.requestPairingCode !== 'function') {
+                    await sock.sendMessage(jid, { text: '⚠️ Fitur pairing belum tersedia di versi Baileys saat ini.' }, { quoted: msg });
+                    return;
+                }
+
+                await sock.sendMessage(jid, { text: `⏳ Meminta pairing code untuk ${targetNumber}...` }, { quoted: msg });
+                try {
+                    const code = await sock.requestPairingCode(targetNumber, pairKey);
+                    await sock.sendMessage(jid, { text: `✅ Pairing Code untuk ${targetNumber}:\n${code}\n\nGunakan kode ini pada device yang ingin kamu pair.` }, { quoted: msg });
+                } catch (error) {
+                    console.error('Error requestPairingCode:', error);
+                    await sock.sendMessage(jid, { text: `❌ Gagal membuat pairing code: ${error.message}` }, { quoted: msg });
+                }
                 return;
             }
 
@@ -456,7 +694,7 @@ async function connectToWhatsApp() {
                     if (isNaN(quantity) || quantity < 1) quantity = 1;
                     console.log(`[BULK] Request dari ${name}: Code=${code}, Qty=${quantity}`);
                     
-                    await sock.sendMessage(jid, { text: `⏳ Sedang memproses oleh ${name}...` }, { quoted: msg });
+                    await showProgressBar(sock, jid, `📦 Generate barcode..`, quantity * 100, 50);
                     try {
                         // Cari produk di database (PLU/Barcode) agar nama barang tampil di label
                         let product = await getProductDetails(code);
@@ -494,7 +732,7 @@ async function connectToWhatsApp() {
                 const codes = text.replace(/^\.plu\s+/i, '').split(/[\s,\n]+/).filter(c => /^\d+$/.test(c));
                 
                 if (codes.length > 0) {
-                    await sock.sendMessage(jid, { text: `🔄 Memproses ${codes.length} kode produk oleh ${name}...` }, { quoted: msg });
+                    await showProgressBar(sock, jid, `🔄 Memproses ${codes.length} kode..`, codes.length * 100, 50);
                     
                     for (const code of codes) {
                         try {
@@ -516,6 +754,24 @@ async function connectToWhatsApp() {
             }
 
             if (text.toLowerCase() === '.menu' || text.toLowerCase() === '.help') {
+                const HELP_MESSAGE = `👋 Selamat Datang ${name}.
+🤖 Bot mencari kode produk (PLU/Barcode/Nama).
+
+📋 *Cara Pakai:*
+1. Kirim *Angka* (PLU/Barcode) untuk lihat label.
+2. Ketik *.cari <Nama>* untuk cari kode.
+
+⚙️ *Fitur Lain:*
+• *.bulk <kode> <jumlah>* : Label dengan Qty.
+• *.plu <kode1> <kode2>* : Cari banyak sekaligus.
+• *.aktiva* : Kirim semua barcode dari folder Barcode_generator.
+  (Jika di group, dikirim ke pesan pribadi)
+• *.pair <nomor> [key]* : Buat pairing code untuk setup awal saja
+• *.aimode* : Aktifkan/nonaktifkan mode AI
+🎥 *Fitur CCTV:*
+• .cctv : Lihat akses CCTV
+
+• *.menu* : Tampilkan pesan ini.`;
                 await sock.sendMessage(jid, { text: HELP_MESSAGE }, { quoted: msg });
                 return;
             }
@@ -526,11 +782,30 @@ async function connectToWhatsApp() {
 
             if (text.length >= 5 && /^\d+$/.test(text)) {
                 console.log(`Mulai pencarian DB untuk kode: ${text}`);
-                await sock.sendMessage(jid, { text: `⏳ Sedang mencari data oleh ${name}...` }, { quoted: msg });
+                
+                // Start loading animation
+                const loadingMsg = await sock.sendMessage(jid, { text: `⏳ Sedang mencari data produk ${text}...` });
+                let animationFrame = 0;
+                const animationInterval = setInterval(async () => {
+                    try {
+                        const spinner = getSpinner(animationFrame);
+                        await sock.sendMessage(jid, { 
+                            text: `${spinner} Sedang mencari data produk ${text}...`, 
+                            edit: loadingMsg.key 
+                        });
+                        animationFrame++;
+                    } catch (err) {
+                        // Ignore edit errors
+                    }
+                }, 150);
+                
                 try {
                     const product = await getProductDetails(text);
                     console.log('Pencarian DB selesai. Hasil:', product ? 'DITEMUKAN' : 'TIDAK DITEMUKAN');
-
+                    
+                    // Stop animation
+                    clearInterval(animationInterval);
+                    
                     if (product) {
                         // Generate the composite image (Standard Mode - No Qty)
                         const finalImageBuffer = await createProductImage(product, text);
@@ -542,6 +817,10 @@ async function connectToWhatsApp() {
                             captionText += `\n\n${listingInfo}`;
                         }
 
+                        if (aiMode) {
+                            captionText = formatAIMessage(captionText);
+                        }
+
                         // Send the single composite image
                         await sock.sendMessage(jid, {
                             image: finalImageBuffer,
@@ -549,15 +828,24 @@ async function connectToWhatsApp() {
                         }, { quoted: msg });
 
                     } else {
-                        await sock.sendMessage(jid, { text: `Produk dengan kode "${text}" tidak ditemukan oleh ${name}.` }, { quoted: msg });
+                        let errorMsg = `Produk dengan kode "${text}" tidak ditemukan oleh ${name}.`;
+                        if (aiMode) {
+                            errorMsg = formatAIMessage(errorMsg);
+                        }
+                        await sock.sendMessage(jid, { text: errorMsg }, { quoted: msg });
                     }
                 } catch (error) {
                     console.error('❌ Kesalahan dalam pemprosesan mesej:', error?.message || error);
+                    clearInterval(animationInterval);
+                    await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan saat memproses kode ${text}.` }, { quoted: msg });
+                }
                     await sock.sendMessage(jid, { text: `⚠️ Maaf, berlaku kesalahan server. Sila cuba lagi.` }, { quoted: msg });
                 }
             } else if (/^\.cari\s+/i.test(text)) {
                 // --- Fitur Cari Nama ---
                 const query = text.replace(/^\.cari\s+/i, '').trim();
+                await showLoadingSpinner(sock, jid, `🔎 Mencari produk "${query}"`, 2000);
+                
                 try {
                     const results = await searchProductByName(query);
                     if (results.length > 0) {
@@ -566,9 +854,18 @@ async function connectToWhatsApp() {
                             replyMsg += `• *${p.nama}*\n  PLU: ${p.plu} | Barcode: ${p.barcode}\n\n`;
                         });
                         replyMsg += `_Kirim kode PLU di atas untuk melihat gambar._`;
+                        
+                        if (aiMode) {
+                            replyMsg = formatAIMessage(replyMsg);
+                        }
+                        
                         await sock.sendMessage(jid, { text: replyMsg }, { quoted: msg });
                     } else {
-                        await sock.sendMessage(jid, { text: `❌ Tidak ditemukan produk dengan nama "${query}" oleh ${name}.` }, { quoted: msg });
+                        let notFoundMsg = `❌ Tidak ditemukan produk dengan nama "${query}" oleh ${name}.`;
+                        if (aiMode) {
+                            notFoundMsg = formatAIMessage(notFoundMsg);
+                        }
+                        await sock.sendMessage(jid, { text: notFoundMsg }, { quoted: msg });
                     }
                 } catch (err) {
                     console.error('Error search name:', err);
