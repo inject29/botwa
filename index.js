@@ -1,6 +1,7 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, delay } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bwipjs = require('bwip-js');
@@ -257,6 +258,12 @@ async function createProductImage(product, queryText, qty = null) {
 // --- Logik Bot Baileys ---
 
 async function connectToWhatsApp() {
+    const hasAuthFolder = fs.existsSync(AUTH_INFO_PATH);
+    if (!hasAuthFolder) {
+        console.log('⚠️ Folder sesi belum ditemukan. Jika Anda sudah memiliki sesi dari device lain, copy folder baileys_auth_info ke folder proyek ini.');
+        console.log('   Jika belum, bot akan menampilkan QR code untuk pairing.');
+    }
+
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_INFO_PATH);
     const { version } = await fetchLatestBaileysVersion();
     
@@ -268,7 +275,7 @@ async function connectToWhatsApp() {
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
         
         if (qr) {
@@ -276,6 +283,16 @@ async function connectToWhatsApp() {
             console.log('🚨 SILAKAN PINDAI QR CODE DI BAWAH SEKARANG 🚨');
             qrcode.generate(qr, { small: true });
             console.log('===========================================\n');
+
+            try {
+                const qrFile = 'qr.png';
+                await QRCode.toFile(qrFile, qr, { type: 'png', width: 500 });
+                fs.writeFileSync('qr.txt', qr, 'utf-8');
+                console.log(`✅ QR code saved to ${qrFile} and qr.txt`);
+                console.log('📎 Jika terminal tidak cocok, download file qr.png untuk discan.');
+            } catch (err) {
+                console.error('❌ Gagal menyimpan QR code ke file:', err.message);
+            }
         }
 
         if (connection === 'close') {
