@@ -9,3 +9,14 @@ products.db
 
 # Log File
 npm-debug.log*
+
+# Generated QR Codes
+qr.png
+qr.txt
+pairing-code.txt
+
+# Chat History
+recent_chats.json
+
+# Package Lock
+package-lock.json
