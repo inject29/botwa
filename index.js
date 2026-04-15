@@ -721,7 +721,7 @@ async function connectToWhatsApp() {
                         await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan.` }, { quoted: msg });
                     }
                 } else {
-                     await sock.sendMessage(jid, { text: `⚠️ Format salah oleh ${name}. Gunakan: *.bulk <kode> <jumlah>*\nContoh: .bulk 89912345 25` }, { quoted: msg });
+                     await sock.sendMessage(jid, { text: `⚠️ Format yang Anda masukkan salah, ${name}. Gunakan format berikut: *.bulk <kode> <jumlah>*\nContoh: .bulk 89912345 25` }, { quoted: msg });
                 }
                 return;
             }
@@ -842,10 +842,9 @@ async function connectToWhatsApp() {
                     await sock.sendMessage(jid, { text: `⚠️ Maaf, berlaku kesalahan server. Sila cuba lagi.` }, { quoted: msg });
                 }
             } else if (/^\.cari\s+/i.test(text)) {
-                // --- Fitur Cari Nama ---
                 const query = text.replace(/^\.cari\s+/i, '').trim();
                 await showLoadingSpinner(sock, jid, `🔎 Mencari produk "${query}"`, 2000);
-                
+
                 try {
                     const results = await searchProductByName(query);
                     if (results.length > 0) {
@@ -854,11 +853,11 @@ async function connectToWhatsApp() {
                             replyMsg += `• *${p.nama}*\n  PLU: ${p.plu} | Barcode: ${p.barcode}\n\n`;
                         });
                         replyMsg += `_Kirim kode PLU di atas untuk melihat gambar._`;
-                        
+
                         if (aiMode) {
                             replyMsg = formatAIMessage(replyMsg);
                         }
-                        
+
                         await sock.sendMessage(jid, { text: replyMsg }, { quoted: msg });
                     } else {
                         let notFoundMsg = `❌ Tidak ditemukan produk dengan nama "${query}" oleh ${name}.`;
@@ -870,6 +869,8 @@ async function connectToWhatsApp() {
                 } catch (err) {
                     console.error('Error search name:', err);
                     await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan saat mencari nama.` }, { quoted: msg });
+                } finally {
+                    console.log('Pencarian produk selesai.');
                 }
             }
 
