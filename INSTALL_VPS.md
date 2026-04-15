@@ -39,19 +39,25 @@ npm -v
 
 ### 3. Install Dependencies Sistem
 
+⚠️ **PENTING**: Install semua ini SEBELUM `npm install` untuk avoid Sharp build errors!
+
 ```bash
-# Untuk Sharp dan SQLite3 (build tools)
+# Untuk Sharp dan SQLite3 (build tools) - REQUIRED
 sudo apt-get install -y build-essential python3 python3-dev
 
-# Untuk SQLite3
+# Untuk SQLite3 - REQUIRED
 sudo apt-get install -y sqlite3 libsqlite3-dev
 
-# Untuk Image Processing (opsional, tapi sangat direkomendasikan)
-sudo apt-get install -y libvips libvips-dev
+# Untuk Sharp/Image Processing - REQUIRED!
+sudo apt-get install -y libvips libvips-dev libglib2.0-dev pkg-config
 
-# Untuk QR Code
-sudo apt-get install -y python3-qrcode
+# Optional tapi sangat recommended
+sudo apt-get install -y g++ make autoconf automake libtool
 ```
+
+**Urutan HARUS seperti ini - jangan langsung `npm install`!**
+
+Jika sudah terlanjur error, lihat: [TROUBLESHOOTING_SHARP.md](./TROUBLESHOOTING_SHARP.md)
 
 ### 4. Clone Repository
 

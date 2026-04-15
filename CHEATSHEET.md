@@ -128,10 +128,18 @@ rm -rf baileys_auth_info
 npm start
 ```
 
-### Build error untuk Sharp
+### Build error untuk Sharp (glib-object.h)
 ```bash
-# Rebuild Sharp
-npm rebuild sharp --build-from-source
+# ⚠️ CRITICAL FIX: Install missing development headers FIRST
+sudo apt-get install -y libglib2.0-dev libvips-dev
+
+# Then clean and reinstall
+cd ~/botwa
+rm -rf node_modules package-lock.json
+npm install
+
+# If still error, see full troubleshooting guide:
+# TROUBLESHOOTING_SHARP.md
 ```
 
 ### High memory usage

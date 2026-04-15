@@ -117,7 +117,7 @@ Sebelum install, siapkan:
 
 ## 🔧 Langkah Instalasi Lengkap
 
-### 1. System Preparation
+### Step 2: System Preparation
 ```bash
 ssh user@vps-ip
 cd ~
@@ -125,10 +125,14 @@ cd ~
 # Update system
 sudo apt-get update && sudo apt-get upgrade -y
 
-# Install build tools
+# ⚠️ CRITICAL: Install these BEFORE npm install!
 sudo apt-get install -y build-essential python3 python3-dev
-sudo apt-get install -y git sqlite3 libsqlite3-dev libvips libvips-dev
+sudo apt-get install -y git sqlite3 libsqlite3-dev 
+sudo apt-get install -y libvips libvips-dev libglib2.0-dev pkg-config
 ```
+
+**⚠️ IMPORTANT**: Install system dependencies SEBELUM `npm install`!  
+Jika sudah error, lihat: [TROUBLESHOOTING_SHARP.md](./TROUBLESHOOTING_SHARP.md)
 
 ### 2. Install Node.js
 ```bash

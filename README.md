@@ -162,7 +162,22 @@ botwa/
 - Never share `products.db` if contains sensitive data
 - All sensitive files are in `.gitignore`
 
-## 🛠️ Troubleshooting
+## � Troubleshooting
+
+### Sharp Build Error (glib-object.h)
+**Error**: `fatal error: glib-object.h: No such file or directory`
+
+**Fix**:
+```bash
+# Install missing development headers
+sudo apt-get install -y libglib2.0-dev libvips-dev
+
+# Reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Complete guide**: [TROUBLESHOOTING_SHARP.md](./TROUBLESHOOTING_SHARP.md)
 
 ### Bot tidak connect
 ```bash
@@ -170,14 +185,11 @@ rm -rf baileys_auth_info
 npm start
 ```
 
-### Sharp/SQLite3 error
+### Database tidak ditemukan
 ```bash
-npm install --build-from-source
-```
-
-### Memory usage tinggi
-```bash
-pm2 start index.js --max-memory-restart 256M
+# Pastikan `products.db` ada di folder project
+# Copy dari device lokal jika belum ada
+scp products.db user@vps:/path/to/botwa/
 ```
 
 Lebih detail: Lihat [INSTALL_VPS.md](./INSTALL_VPS.md#-troubleshooting)
