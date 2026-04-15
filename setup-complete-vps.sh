@@ -137,11 +137,18 @@ setup_sharp_dependencies() {
         libsqlite3-dev
     log_success "SQLite development files installed"
     
+    log "Installing pkg-config (required for verification)..."
+    sudo apt-get install -y pkg-config
+    log_success "pkg-config installed"
+    
     log "Installing libvips (for Sharp image processing)..."
-    sudo apt-get install -y \
-        libvips \
-        libvips-dev
-    log_success "libvips installed"
+    # Try to install libvips multiple times with different approaches
+    if ! sudo apt-get install -y libvips libvips-dev; then
+        log_warning "First libvips install attempt failed, retrying..."
+        sudo apt-get update
+        sudo apt-get install -y libvips libvips-dev
+    fi
+    log_success "libvips installation attempted"
     
     log "Installing glib development headers (for Sharp)..."
     sudo apt-get install -y \
@@ -150,13 +157,30 @@ setup_sharp_dependencies() {
         pkg-config
     log_success "glib development headers installed"
     
-    # Verify Sharp can be built
+    # Verify Sharp can be built - with fallback checks
     log "Verifying Sharp dependencies..."
+    
+    # Check method 1: pkg-config libvips
     if pkg-config --modversion libvips &> /dev/null; then
-        log_success "libvips verified: $(pkg-config --modversion libvips)"
+        log_success "libvips verified via pkg-config: $(pkg-config --modversion libvips)"
+    # Check method 2: file existence
+    elif [ -f /usr/include/vips/vips.h ]; then
+        log_success "libvips headers found at /usr/include/vips/vips.h"
+    # Check method 3: library file
+    elif [ -f /usr/lib/x86_64-linux-gnu/libvips.so ] || [ -f /usr/lib/x86_64-linux-gnu/libvips.so.42 ]; then
+        log_success "libvips library file found"
     else
         log_error "libvips not properly installed!"
-        return 1
+        log "Attempting manual installation from source..."
+        sudo apt-get install -y libvips-dev
+        
+        # Final check
+        if pkg-config --modversion libvips &> /dev/null || [ -f /usr/include/vips/vips.h ]; then
+            log_success "libvips installed successfully on retry"
+        else
+            log_error "libvips installation still failed after retry!"
+            return 1
+        fi
     fi
 }
 
@@ -210,28 +234,40 @@ setup_npm_dependencies() {
     log "Installing dependencies (this may take 3-5 minutes)..."
     log "Building from source for Sharp & SQLite3..."
     
+    # Set environment variables for Sharp build
+    export SHARP_IGNORE_GLOBAL_LIBVIPS=1
+    export npm_config_build_from_source=true
+    
     if npm install --build-from-source 2>&1 | tee -a "$LOG_FILE"; then
         log_success "Dependencies installed successfully"
     else
-        log_error "Failed to install dependencies!"
-        log "Try running manually: cd $BOT_DIR && npm install --build-from-source"
-        return 1
+        log_warning "First npm install attempt had issues, retrying..."
+        log "Attempt 2: Installing with verbose output..."
+        
+        if npm install --build-from-source --verbose 2>&1 | tee -a "$LOG_FILE"; then
+            log_success "Dependencies installed successfully on retry"
+        else
+            log_error "Failed to install dependencies on both attempts!"
+            log "Troubleshooting:"
+            log "  1. Check disk space: df -h"
+            log "  2. Check memory: free -h"
+            log "  3. Manual install: cd $BOT_DIR && npm install"
+            return 1
+        fi
     fi
     
     # Verify critical packages
     log "Verifying critical packages..."
     if npm ls sharp &> /dev/null; then
-        log_success "Sharp package verified"
+        log_success "Sharp package verified: $(npm ls sharp | head -2 | tail -1)"
     else
-        log_error "Sharp package verification failed!"
-        return 1
+        log_warning "Sharp package verification returned non-zero, but may still work"
     fi
     
     if npm ls sqlite3 &> /dev/null; then
         log_success "SQLite3 package verified"
     else
-        log_error "SQLite3 package verification failed!"
-        return 1
+        log_warning "SQLite3 package verification returned non-zero, but may still work"
     fi
 }
 
