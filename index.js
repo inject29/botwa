@@ -12,6 +12,7 @@ const smsService = require('./sms_service'); // 1. Import modul SMS terpisah
 const indomaretService = require('./indomaret_service'); // Import modul Indomaret
 const cctvService = require('./cctv_service'); // Import modul CCTV
 const { getListingCaption } = require('./listing_service'); // Import modul Listing
+const { createElainaAnimation } = require('@rexxhayanasi/elaina-bail');
 
 // --- Konfigurasi Database SQLite ---
 const DB_FILE = 'products.db';
@@ -76,6 +77,16 @@ function saveRecentChats(chats) {
         fs.writeFileSync(RECENT_CHATS_FILE, JSON.stringify(chats, null, 2), 'utf-8');
     } catch (err) {
         console.warn('⚠️ Gagal menyimpan recent chats:', err.message);
+    }
+}
+
+function recordRecentChat(jid) {
+    try {
+        const recentChats = loadRecentChats();
+        recentChats[jid] = Date.now(); // Save the timestamp of the chat
+        saveRecentChats(recentChats);
+    } catch (err) {
+        console.error('❌ Error recording recent chat:', err.message);
     }
 }
 
@@ -147,16 +158,18 @@ function getAnimatedEmoji(frame) {
     return emojis[frame % emojis.length];
 }
 
+// Replace the existing loading spinner with custom animation
 async function showLoadingSpinner(sock, jid, initialMsg, duration = 3000) {
     try {
+        const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
         const startTime = Date.now();
-        let frame = 0;
         let lastMsg = null;
+        let frameIndex = 0;
 
         while (Date.now() - startTime < duration) {
-            const spinner = getSpinner(frame);
+            const spinner = spinnerFrames[frameIndex % spinnerFrames.length];
             const text = `${spinner} ${initialMsg}`;
-            
+
             if (!lastMsg) {
                 lastMsg = await sock.sendMessage(jid, { text });
             } else {
@@ -166,9 +179,9 @@ async function showLoadingSpinner(sock, jid, initialMsg, duration = 3000) {
                     console.warn('Could not edit loading message:', err.message);
                 }
             }
-            
-            frame++;
-            await delay(100);
+
+            frameIndex++;
+            await delay(150);
         }
         return lastMsg;
     } catch (err) {
@@ -177,15 +190,48 @@ async function showLoadingSpinner(sock, jid, initialMsg, duration = 3000) {
     }
 }
 
-async function showProgressBar(sock, jid, initialMsg, steps = 10, delayMs = 500) {
+async function showCustomLoadingAnimation(sock, jid, initialMsg, duration = 3000) {
+    try {
+        const frames = ['🔍', '⌛', '🔎', '⏳'];
+        const startTime = Date.now();
+        let frame = 0;
+        let lastMsg = null;
+
+        while (Date.now() - startTime < duration) {
+            const text = `${frames[frame % frames.length]} ${initialMsg}`;
+
+            if (!lastMsg) {
+                lastMsg = await sock.sendMessage(jid, { text });
+            } else {
+                try {
+                    await sock.sendMessage(jid, { text, edit: lastMsg.key });
+                } catch (err) {
+                    console.warn('Could not edit loading message:', err.message);
+                }
+            }
+
+            frame++;
+            await delay(500); // Ganti frame setiap 500ms
+        }
+        return lastMsg;
+    } catch (err) {
+        console.error('Error in custom loading animation:', err.message);
+        return null;
+    }
+}
+
+// Fungsi untuk menampilkan progress bar custom
+async function showProgressBar(sock, jid, initialMsg, totalSteps, delayMs = 500) {
     try {
         let lastMsg = null;
 
-        for (let i = 0; i <= steps; i++) {
-            const percent = Math.floor((i / steps) * 100);
-            const bar = getProgressBar(percent);
-            const text = `${initialMsg}\n${bar}`;
-            
+        for (let step = 0; step <= totalSteps; step++) {
+            const filled = Math.floor((step / totalSteps) * 20);
+            const empty = 20 - filled;
+            const percent = Math.floor((step / totalSteps) * 100);
+            const progressBar = `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${percent}%`;
+            const text = `${initialMsg}\n${progressBar}`;
+
             if (!lastMsg) {
                 lastMsg = await sock.sendMessage(jid, { text });
             } else {
@@ -195,9 +241,12 @@ async function showProgressBar(sock, jid, initialMsg, steps = 10, delayMs = 500)
                     console.warn('Could not edit progress message:', err.message);
                 }
             }
-            
+
             await delay(delayMs);
         }
+
+        // Kirim pesan selesai setelah progress bar selesai
+        await sock.sendMessage(jid, { text: `${initialMsg}\n✅ Progress selesai!` });
         return lastMsg;
     } catch (err) {
         console.error('Error in progress bar:', err.message);
@@ -205,22 +254,14 @@ async function showProgressBar(sock, jid, initialMsg, steps = 10, delayMs = 500)
     }
 }
 
-function recordRecentChat(jid) {
-    if (!jid) return;
-    // Only personal chats (WhatsApp number IDs)
-    if (!jid.endsWith('@s.whatsapp.net') && !jid.endsWith('@c.us')) return;
-
-    const recentChats = loadRecentChats();
-    recentChats[jid] = Date.now();
-    saveRecentChats(recentChats);
-}
-
 function getRecentChatJids(days = 2) {
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
     const recentChats = loadRecentChats();
-    return Object.entries(recentChats)
-        .filter(([_, timestamp]) => timestamp >= cutoff)
-        .map(([jid]) => jid);
+    const cutoffTime = Date.now() - days * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+
+    return Object.keys(recentChats).filter(jid => {
+        const lastActive = recentChats[jid];
+        return lastActive >= cutoffTime;
+    });
 }
 
 async function broadcastOnlineToRecentChats(sock) {
@@ -467,6 +508,11 @@ async function connectToWhatsApp() {
         }
     }
 
+    if (!fs.existsSync(AUTH_INFO_PATH)) {
+        console.warn('⚠️ Folder sesi tidak ditemukan. Membuat ulang folder sesi...');
+        fs.mkdirSync(AUTH_INFO_PATH, { recursive: true });
+    }
+
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_INFO_PATH);
     const { version } = await fetchLatestBaileysVersion();
     
@@ -520,12 +566,20 @@ async function connectToWhatsApp() {
             }
             
             if (shouldReconnect) {
-                console.log('Mencoba sambung semula dalam 5 detik...');
-                delay(5000).then(() => connectToWhatsApp()); 
+                console.log('🛑 Bot terputus. Silakan restart bot secara manual.');
+                process.exit(1); // Exit the process to prevent multiple instances
             } else {
                 console.log('🛑 Sesi keluar. Sila jalankan bot secara manual untuk memindai QR code baru.');
+                process.exit(1);
             }
 
+        }
+
+        if (connection === 'connectionReplaced') {
+            console.warn('⚠️ Sambungan digantikan oleh sesi lain. Pastikan tidak ada sesi lain yang aktif.');
+            console.warn('⚠️ Jika WhatsApp terbuka di perangkat lain atau browser, tutup terlebih dahulu.');
+            console.log('🛑 Keluar untuk mencegah konflik sesi. Silakan restart bot.');
+            process.exit(1); // Exit to prevent multiple instances
         }
 
         if (initialPairMode && !initialPairRequested && connection === 'connecting') {
@@ -548,10 +602,11 @@ async function connectToWhatsApp() {
 
         if (connection === 'open') {
             console.log('✅ Bot WhatsApp telah disambungkan dan siap menerima pesan!');
-            if (!hasSentOnlineBroadcast) {
-                hasSentOnlineBroadcast = true;
-                await broadcastOnlineToRecentChats(sock);
-            }
+            // Nonaktifkan fitur broadcast sementara
+            // if (!hasSentOnlineBroadcast) {
+            //     hasSentOnlineBroadcast = true;
+            //     await broadcastOnlineToRecentChats(sock);
+            // }
         }
     });
 
@@ -608,7 +663,20 @@ async function connectToWhatsApp() {
 
             // --- Fitur Kirim Barcode dari Folder ---
             if (text.toLowerCase() === '.aktiva') {
-                await sendBarcodeFromGenerator(sock, jid, msg);
+                // React to indicate processing started
+                await sendReaction(sock, jid, msg.key, '⏳');
+                
+                try {
+                    await sendBarcodeFromGenerator(sock, jid, msg);
+                    
+                    // React to indicate successful completion
+                    await sendReaction(sock, jid, msg.key, '✅');
+                } catch (err) {
+                    console.error('Error in .aktiva command:', err);
+                    
+                    // React to indicate error
+                    await sendReaction(sock, jid, msg.key, '❌');
+                }
                 return;
             }
 
@@ -694,6 +762,9 @@ async function connectToWhatsApp() {
                     if (isNaN(quantity) || quantity < 1) quantity = 1;
                     console.log(`[BULK] Request dari ${name}: Code=${code}, Qty=${quantity}`);
                     
+                    // React to indicate processing started
+                    await sendReaction(sock, jid, msg.key, '⏳');
+                    
                     await showProgressBar(sock, jid, `📦 Generate barcode..`, quantity * 100, 50);
                     try {
                         // Cari produk di database (PLU/Barcode) agar nama barang tampil di label
@@ -715,10 +786,16 @@ async function connectToWhatsApp() {
 
                         const finalImageBuffer = await createProductImage(product, code, quantity);
                         await sock.sendMessage(jid, { image: finalImageBuffer, caption: caption }, { quoted: msg });
+                        
+                        // React to indicate successful completion
+                        await sendReaction(sock, jid, msg.key, '✅');
 
                     } catch (err) {
                         console.error(`Error bulk processing ${code}:`, err);
                         await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan.` }, { quoted: msg });
+                        
+                        // React to indicate error
+                        await sendReaction(sock, jid, msg.key, '❌');
                     }
                 } else {
                      await sock.sendMessage(jid, { text: `⚠️ Format yang Anda masukkan salah, ${name}. Gunakan format berikut: *.bulk <kode> <jumlah>*\nContoh: .bulk 89912345 25` }, { quoted: msg });
@@ -726,32 +803,7 @@ async function connectToWhatsApp() {
                 return;
             }
 
-            // --- Fitur Multi PLU (.plu) ---
-            // Format: ".plu <kode1> <kode2> ..."
-            if (/^\.plu\s+/i.test(text)) {
-                const codes = text.replace(/^\.plu\s+/i, '').split(/[\s,\n]+/).filter(c => /^\d+$/.test(c));
-                
-                if (codes.length > 0) {
-                    await showProgressBar(sock, jid, `🔄 Memproses ${codes.length} kode..`, codes.length * 100, 50);
-                    
-                    for (const code of codes) {
-                        try {
-                            const product = await getProductDetails(code);
-                            if (product) {
-                                const finalImageBuffer = await createProductImage(product, code);
-                                await sock.sendMessage(jid, { image: finalImageBuffer, caption: `✅ Produk Ditemukan oleh ${name}: ${code}` }, { quoted: msg });
-                            } else {
-                                await sock.sendMessage(jid, { text: `❌ Kode "${code}" tidak ditemukan oleh ${name}.` }, { quoted: msg });
-                            }
-                            await delay(1000); // Jeda aman untuk menghindari spam
-                        } catch (err) {
-                            console.error(`Error multi-plu processing ${code}:`, err);
-                        }
-                    }
-                    await sock.sendMessage(jid, { text: `✅ Selesai memproses daftar PLU oleh ${name}.` }, { quoted: msg });
-                    return;
-                }
-            }
+            // --- Multiple PLU otomatis terdeteksi di bagian single PLU handler ---
 
             if (text.toLowerCase() === '.menu' || text.toLowerCase() === '.help') {
                 const HELP_MESSAGE = `👋 Selamat Datang ${name}.
@@ -780,69 +832,145 @@ async function connectToWhatsApp() {
                 return;
             }
 
-            if (text.length >= 5 && /^\d+$/.test(text)) {
-                console.log(`Mulai pencarian DB untuk kode: ${text}`);
+            // Auto-detect single or multiple PLU codes (separated by space, dot, or newline)
+            const codeArray = text.split(/[\s.\n]+/).filter(c => /^\d{5,}$/.test(c));
+            
+            if (codeArray.length > 0) {
+                console.log(`Pencarian untuk ${codeArray.length} kode: ${codeArray.join(', ')}`);
                 
-                // Start loading animation
-                const loadingMsg = await sock.sendMessage(jid, { text: `⏳ Sedang mencari data produk ${text}...` });
-                let animationFrame = 0;
-                const animationInterval = setInterval(async () => {
+                // React to indicate processing started
+                await sendReaction(sock, jid, msg.key, '⏳');
+                
+                if (codeArray.length === 1) {
+                    // Single PLU - Progress bar animation
+                    const singleCode = codeArray[0];
+                    const loadingMsg = await sock.sendMessage(jid, { text: `[░░░░░░░░░░░░░░░░░░] 0%` });
+                    let progressValue = 0;
+                    
+                    const progressInterval = setInterval(async () => {
+                        try {
+                            progressValue = Math.min(progressValue + 10, 90);
+                            const filled = Math.floor(progressValue / 5);
+                            const empty = 20 - filled;
+                            const progressBar = `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${progressValue}%`;
+                            
+                            await sock.sendMessage(jid, { 
+                                text: progressBar, 
+                                edit: loadingMsg.key 
+                            });
+                        } catch (err) {
+                            // Ignore edit errors
+                        }
+                    }, 200);
+                    
                     try {
-                        const spinner = getSpinner(animationFrame);
+                        const product = await getProductDetails(singleCode);
+                        console.log('Pencarian DB selesai. Hasil:', product ? 'DITEMUKAN' : 'TIDAK DITEMUKAN');
+                        
+                        clearInterval(progressInterval);
+                        const progressBar = `[${'█'.repeat(20)}] 100%`;
                         await sock.sendMessage(jid, { 
-                            text: `${spinner} Sedang mencari data produk ${text}...`, 
+                            text: progressBar, 
                             edit: loadingMsg.key 
                         });
-                        animationFrame++;
-                    } catch (err) {
-                        // Ignore edit errors
-                    }
-                }, 150);
-                
-                try {
-                    const product = await getProductDetails(text);
-                    console.log('Pencarian DB selesai. Hasil:', product ? 'DITEMUKAN' : 'TIDAK DITEMUKAN');
-                    
-                    // Stop animation
-                    clearInterval(animationInterval);
-                    
-                    if (product) {
-                        // Generate the composite image (Standard Mode - No Qty)
-                        const finalImageBuffer = await createProductImage(product, text);
+
+                        if (product) {
+                            const finalImageBuffer = await createProductImage(product, singleCode);
+                            let captionText = `✅ *Produk Ditemukan oleh ${name}:* ${singleCode}`;
+                            const listingInfo = await getListingCaption(product.plu || singleCode);
+                            if (listingInfo) {
+                                captionText += `\n\n${listingInfo}`;
+                            }
+                            if (aiMode) {
+                                captionText = formatAIMessage(captionText);
+                            }
+                            await sock.sendMessage(jid, {
+                                image: finalImageBuffer,
+                                caption: captionText
+                            }, { quoted: msg });
+                            
+                            // React to indicate successful completion
+                            await sendReaction(sock, jid, msg.key, '✅');
+                        } else {
+                            let errorMsg = `Produk dengan kode "${singleCode}" tidak ditemukan oleh ${name}.`;
+                            if (aiMode) {
+                                errorMsg = formatAIMessage(errorMsg);
+                            }
+                            await sock.sendMessage(jid, { text: errorMsg }, { quoted: msg });
+                            
+                            // React to indicate not found
+                            await sendReaction(sock, jid, msg.key, '❌');
+                        }
+                    } catch (error) {
+                        console.error('❌ Kesalahan:', error?.message || error);
+                        clearInterval(progressInterval);
+                        await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan saat memproses kode ${singleCode}.` }, { quoted: msg });
                         
-                        // Ambil info tambahan dari Listing DB (Rak, Shelf, dll)
-                        let captionText = `✅ *Produk Ditemukan oleh ${name}:* ${text}`;
-                        const listingInfo = await getListingCaption(product.plu || text);
-                        if (listingInfo) {
-                            captionText += `\n\n${listingInfo}`;
-                        }
-
-                        if (aiMode) {
-                            captionText = formatAIMessage(captionText);
-                        }
-
-                        // Send the single composite image
-                        await sock.sendMessage(jid, {
-                            image: finalImageBuffer,
-                            caption: captionText
-                        }, { quoted: msg });
-
-                    } else {
-                        let errorMsg = `Produk dengan kode "${text}" tidak ditemukan oleh ${name}.`;
-                        if (aiMode) {
-                            errorMsg = formatAIMessage(errorMsg);
-                        }
-                        await sock.sendMessage(jid, { text: errorMsg }, { quoted: msg });
+                        // React to indicate error
+                        await sendReaction(sock, jid, msg.key, '❌');
                     }
-                } catch (error) {
-                    console.error('❌ Kesalahan dalam pemprosesan mesej:', error?.message || error);
-                    clearInterval(animationInterval);
-                    await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan saat memproses kode ${text}.` }, { quoted: msg });
+                } else {
+                    // Multiple PLU - Progress bar animation
+                    const loadingMsg = await sock.sendMessage(jid, { text: `[░░░░░░░░░░░░░░░░░░] 0%` });
+                    const totalCodes = codeArray.length;
+                    let processedCount = 0;
+                    
+                    const progressInterval = setInterval(async () => {
+                        try {
+                            const currentProgress = Math.floor((processedCount / totalCodes) * 100);
+                            const filled = Math.floor(currentProgress / 5);
+                            const empty = 20 - filled;
+                            const progressBar = `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${currentProgress}%`;
+                            
+                            await sock.sendMessage(jid, { 
+                                text: progressBar, 
+                                edit: loadingMsg.key 
+                            });
+                        } catch (err) {
+                            // Ignore edit errors
+                        }
+                    }, 300);
+                    
+                    try {
+                        for (const code of codeArray) {
+                            try {
+                                const product = await getProductDetails(code);
+                                if (product) {
+                                    const finalImageBuffer = await createProductImage(product, code);
+                                    await sock.sendMessage(jid, { image: finalImageBuffer, caption: `✅ ${code}` }, { quoted: msg });
+                                } else {
+                                    await sock.sendMessage(jid, { text: `❌ Kode "${code}" tidak ditemukan.` }, { quoted: msg });
+                                }
+                                processedCount++;
+                                await delay(800);
+                            } catch (err) {
+                                console.error(`Error processing code ${code}:`, err);
+                                processedCount++;
+                            }
+                        }
+                        clearInterval(progressInterval);
+                        const progressBar = `[${'█'.repeat(20)}] 100%`;
+                        await sock.sendMessage(jid, { 
+                            text: progressBar, 
+                            edit: loadingMsg.key 
+                        });
+                        await sock.sendMessage(jid, { text: `✅ Selesai memproses ${totalCodes} kode.` }, { quoted: msg });
+                        
+                        // React to indicate completion
+                        await sendReaction(sock, jid, msg.key, '✅');
+                    } catch (error) {
+                        console.error('❌ Kesalahan:', error?.message || error);
+                        clearInterval(progressInterval);
+                        await sendReaction(sock, jid, msg.key, '❌');
+                    }
                 }
-                    await sock.sendMessage(jid, { text: `⚠️ Maaf, berlaku kesalahan server. Sila cuba lagi.` }, { quoted: msg });
-                }
+                return;
             } else if (/^\.cari\s+/i.test(text)) {
                 const query = text.replace(/^\.cari\s+/i, '').trim();
+                
+                // React to indicate processing started
+                await sendReaction(sock, jid, msg.key, '⏳');
+                
                 await showLoadingSpinner(sock, jid, `🔎 Mencari produk "${query}"`, 2000);
 
                 try {
@@ -859,16 +987,25 @@ async function connectToWhatsApp() {
                         }
 
                         await sock.sendMessage(jid, { text: replyMsg }, { quoted: msg });
+                        
+                        // React to indicate successful completion
+                        await sendReaction(sock, jid, msg.key, '✅');
                     } else {
                         let notFoundMsg = `❌ Tidak ditemukan produk dengan nama "${query}" oleh ${name}.`;
                         if (aiMode) {
                             notFoundMsg = formatAIMessage(notFoundMsg);
                         }
                         await sock.sendMessage(jid, { text: notFoundMsg }, { quoted: msg });
+                        
+                        // React to indicate not found
+                        await sendReaction(sock, jid, msg.key, '❌');
                     }
                 } catch (err) {
                     console.error('Error search name:', err);
                     await sock.sendMessage(jid, { text: `⚠️ Terjadi kesalahan saat mencari nama.` }, { quoted: msg });
+                    
+                    // React to indicate error
+                    await sendReaction(sock, jid, msg.key, '❌');
                 } finally {
                     console.log('Pencarian produk selesai.');
                 }
