@@ -602,11 +602,11 @@ async function connectToWhatsApp() {
 
         if (connection === 'open') {
             console.log('✅ Bot WhatsApp telah disambungkan dan siap menerima pesan!');
-            // Nonaktifkan fitur broadcast sementara
-            // if (!hasSentOnlineBroadcast) {
-            //     hasSentOnlineBroadcast = true;
-            //     await broadcastOnlineToRecentChats(sock);
-            // }
+            // Aktifkan fitur broadcast
+            if (!hasSentOnlineBroadcast) {
+                hasSentOnlineBroadcast = true;
+                await broadcastOnlineToRecentChats(sock);
+            }
         }
     });
 
