@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, delay } = require('@rexxhayanasi/elaina-bail');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, delay } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode');
@@ -12,7 +12,6 @@ const smsService = require('./sms_service'); // 1. Import modul SMS terpisah
 // const indomaretService = require('./indomaret_service'); // Import modul Indomaret (Dinonaktifkan)
 const cctvService = require('./cctv_service'); // Import modul CCTV
 const { getListingCaption } = require('./listing_service'); // Import modul Listing
-const { createElainaAnimation } = require('@rexxhayanasi/elaina-bail');
 
 // --- Konfigurasi Database SQLite ---
 const DB_FILE = 'products.db';
