@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@rexxhayanasi/elaina-bail": "^1.4.8",
-    "@whiskeysockets/baileys": "npm:@rexxhayanasi/elaina-bail",
     "axios": "^1.7.2",
     "bwip-js": "^2.0.10",
     "pino": "^8.17.2",
