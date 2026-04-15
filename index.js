@@ -603,10 +603,10 @@ async function connectToWhatsApp() {
         if (connection === 'open') {
             console.log('✅ Bot WhatsApp telah disambungkan dan siap menerima pesan!');
             // Aktifkan fitur broadcast
-            if (!hasSentOnlineBroadcast) {
-                hasSentOnlineBroadcast = true;
-                await broadcastOnlineToRecentChats(sock);
-            }
+            // if (!hasSentOnlineBroadcast) {
+            //     hasSentOnlineBroadcast = true;
+            //     await broadcastOnlineToRecentChats(sock);
+            // }
         }
     });
 
