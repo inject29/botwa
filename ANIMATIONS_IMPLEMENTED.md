@@ -34,8 +34,9 @@ Successfully implemented **3 types of loading animations** across the WhatsApp b
   - `stepDelay`: Delay between steps in ms (default 50ms)
 - **Behavior**: Updates message with progress from 0% → 100%
 - **Applied to**:
+  - **Single PLU**: Auto-detected when user sends 5+ digit code
+  - **Multiple PLU**: Auto-detected when user sends multiple codes (space/dot/newline separated)
   - `.bulk <code> <qty>` - Generate multiple barcodes
-  - `.plu <code1> <code2> ...` - Multi-PLU lookup
 
 ---
 
@@ -56,9 +57,10 @@ Successfully implemented **3 types of loading animations** across the WhatsApp b
 
 | Command | Animation Type | Operation |
 |---------|---|---|
+| **Single PLU** (5+ digits) | **Progress Bar** | Single product lookup |
+| **Multiple PLU** (space/dot/newline) | **Progress Bar** | Auto-detect & process multiple codes |
 | `.cari <nama>` | **Spinner** | Name search (2000ms) |
 | `.bulk <code> <qty>` | **Progress Bar** | Barcode generation |
-| `.plu <c1> <c2>...` | **Progress Bar** | Multi-PLU lookup |
 | `.aktiva` | **Animated Emoji** | Barcode batch sending |
 
 ---
@@ -107,15 +109,26 @@ caption: `${getAnimatedEmoji(i)} ${i + 1}/${files.length} | 📊 ${file}`
 - ✅ Spinner function defined and working
 - ✅ Progress bar function defined and working
 - ✅ Animated emoji function defined and working
-- ✅ Integrated into `.cari` command
+- ✅ Integrated into single PLU auto-detection
+- ✅ Integrated into multiple PLU auto-detection
 - ✅ Integrated into `.bulk` command
-- ✅ Integrated into `.plu` command
+- ✅ Integrated into `.cari` command
 - ✅ Integrated into `.aktiva` command
+- ✅ Message reactions (⏳ ✅ ❌) working for all features
 - ⏳ Runtime testing needed
 
 ---
 
-## 8. **Future Enhancements**
+## 8. **Hidden Features**
+
+- ✅ **Multiple PLU Auto-Detection**: `.plu` command removed, now automatically detected when user sends multiple codes
+  - Format: `20019930 20019931 20019932` (any separator: space, dot, newline)
+  - Transparent to user - no command needed
+  - Progress bar shows processing status
+
+---
+
+## 9. **Future Enhancements**
 
 - [ ] Add more emoji animation frames for variety
 - [ ] Customize animation speed per operation
@@ -125,4 +138,4 @@ caption: `${getAnimatedEmoji(i)} ${i + 1}/${files.length} | 📊 ${file}`
 
 ---
 
-**Status**: ✅ Implementation Complete | Ready for Testing
+**Status**: ✅ Implementation Complete | ✅ Hidden `.plu` Feature Active | Ready for Testing

@@ -811,11 +811,12 @@ async function connectToWhatsApp() {
 
 📋 *Cara Pakai:*
 1. Kirim *Angka* (PLU/Barcode) untuk lihat label.
+   • Single: 20019930
+   • Multiple: 20019930 20019931 20019932 (space/dot/newline separator)
 2. Ketik *.cari <Nama>* untuk cari kode.
 
 ⚙️ *Fitur Lain:*
 • *.bulk <kode> <jumlah>* : Label dengan Qty.
-• *.plu <kode1> <kode2>* : Cari banyak sekaligus.
 • *.aktiva* : Kirim semua barcode dari folder Barcode_generator.
   (Jika di group, dikirim ke pesan pribadi)
 • *.pair <nomor> [key]* : Buat pairing code untuk setup awal saja
