@@ -24,6 +24,8 @@
     "@whiskeysockets/baileys": "^6.7.0",
     "axios": "^1.7.2",
     "bwip-js": "^2.0.10",
+    "dotenv": "^17.4.2",
+    "groq-sdk": "^1.1.2",
     "pino": "^8.17.2",
     "qrcode": "^1.5.1",
     "qrcode-terminal": "^0.12.0",

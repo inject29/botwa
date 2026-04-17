@@ -20,3 +20,9 @@ recent_chats.json
 
 # Package Lock
 package-lock.json
+
+# Environment Variables (Sensitive Data)
+.env
+
+# AI Cache (Local Optimization)
+ai_cache.json

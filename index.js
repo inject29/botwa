@@ -8,10 +8,22 @@ const readline = require('readline');
 const bwipjs = require('bwip-js');
 const sharp = require('sharp');
 const axios = require('axios');
+const Groq = require('groq-sdk');
+require('dotenv').config();
+const aiCache = require('./ai_cache'); // Import cache manager
 const smsService = require('./sms_service'); // 1. Import modul SMS terpisah
 // const indomaretService = require('./indomaret_service'); // Import modul Indomaret (Dinonaktifkan)
 const cctvService = require('./cctv_service'); // Import modul CCTV
 const { getListingCaption } = require('./listing_service'); // Import modul Listing
+
+// --- Groq AI Configuration ---
+const groqApiKey = process.env.GROQ_API_KEY;
+const groqModel = process.env.GROQ_MODEL || 'llama-3.1-70b-versatile';
+const cacheEnabled = process.env.CACHE_ENABLED !== 'false'; // Default: enabled
+let groqClient = null;
+if (groqApiKey) {
+    groqClient = new Groq({ apiKey: groqApiKey });
+}
 
 // --- Konfigurasi Database SQLite ---
 const DB_FILE = 'products.db';
@@ -25,7 +37,7 @@ let initialPairMode = false;
 let initialPairRequested = false;
 let aiMode = false;
 let autoReactEmoji = '❤️';
-let autoReactEnabled = true;
+let autoReactEnabled = false;
 
 const db = new sqlite3.Database(DB_FILE, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
@@ -126,6 +138,65 @@ async function promptInitialPairingMode() {
 
 function formatAIMessage(text) {
     return `🤖 *AI Response:*\n${text}`;
+}
+
+async function getGroqResponse(prompt) {
+    if (!groqClient || !groqApiKey) {
+        console.warn('⚠️ Groq API key tidak dikonfigurasi');
+        return null;
+    }
+
+    // Check cache dulu jika enabled
+    if (cacheEnabled) {
+        const cached = aiCache.get(prompt);
+        if (cached) {
+            return cached;
+        }
+    }
+
+    try {
+        const message = await groqClient.messages.create({
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            model: groqModel,
+            max_tokens: 500,
+            temperature: 0.7
+        });
+
+        if (message.content && message.content[0] && message.content[0].text) {
+            const response = message.content[0].text;
+            
+            // Save ke cache jika enabled
+            if (cacheEnabled) {
+                aiCache.set(prompt, response);
+            }
+            
+            return response;
+        }
+        return null;
+    } catch (err) {
+        console.error('❌ Error calling Groq API:', err.message);
+        return null;
+    }
+}
+
+async function processWithAI(text) {
+    if (!aiMode || !groqClient) {
+        return formatAIMessage(text);
+    }
+
+    // Jika AI mode ON, tanyakan Groq untuk enhance/summarize hasil
+    const prompt = `Kamu adalah asisten WhatsApp bot yang membantu dengan pencarian produk. Berikut adalah informasi produk/hasil pencarian. Mohon berikan respon singkat dan helpful dalam Bahasa Indonesia:\n\n${text}`;
+    
+    const response = await getGroqResponse(prompt);
+    if (response) {
+        return `🤖 *AI Response:*\n${response}`;
+    }
+    return formatAIMessage(text);
 }
 
 async function sendReaction(sock, jid, msgKey, emoji) {
@@ -638,7 +709,56 @@ async function connectToWhatsApp() {
 
             console.log('messages.upsert from=', jid, 'text=', text);
 
-            const HELP_MESSAGE = `👋 Selamat Datang ${name}.\n🤖 Bot mencari kode produk (PLU/Barcode/Nama).\n\n📋 *Cara Pakai:*\n1. Kirim *Angka* (PLU/Barcode) untuk lihat label.\n2. Ketik *.cari <Nama>* untuk cari kode.\n\n⚙️ *Fitur Lain:*\n• *.bulk <kode> <jumlah>* : Label dengan Qty.\n• *.plu <kode1> <kode2>* : Cari banyak sekaligus.\n• *.aktiva* : Kirim semua barcode dari folder Barcode_generator.\n  (Jika di group, dikirim ke pesan pribadi)\n• *.pair <nomor> [key]* : Buat pairing code untuk setup awal saja\n• *.aimode* : Aktifkan/nonaktifkan mode AI\n🎥 *Fitur CCTV:*\n• .cctv : Lihat akses CCTV\n\n• *.menu* : Tampilkan pesan ini.`;
+            const isPrivateChat = jid.endsWith('@s.whatsapp.net');
+            const isGroupChat = jid.endsWith('@g.us');
+
+            // --- Helper: Generate Help Message ---
+            function getHelpMessage(isAdmin = false) {
+                const publicMenu = `👋 Selamat Datang ${name}.
+🤖 Bot untuk mencari kode produk (PLU/Barcode/Nama).
+
+📋 *Cara Pakai:*
+1. Kirim *Angka* (PLU/Barcode) untuk lihat label.
+   • Single: 20019930
+   • Multiple: 20019930 20019931 20019932 (space/dot/newline separator)
+2. Ketik *.cari <Nama>* untuk cari produk.
+
+✨ *Fitur:*
+• *.bulk <kode> <jumlah>* : Label dengan quantity
+• *.aktiva* : Kirim semua barcode
+• *.cctv* : CCTV menu
+
+💡 *Bantuan:*
+• *.menu* : Tampilkan ini`;
+
+                const adminMenu = `👋 Admin Panel - ${name}
+
+📋 *PUBLIC COMMANDS:*
+• Angka (PLU/Barcode) : Cari produk
+• *.cari <nama>* : Search by name
+• *.bulk <kode> <qty>* : Generate dengan quantity
+• *.aktiva* : Send all barcodes
+• *.menu* : Public help
+
+🔐 *ADMIN COMMANDS:*
+• *.setgroq <key>* : Set Groq API
+• *.aimode* : Toggle AI
+• *.autoreact* : Toggle auto-react
+• *.setreact <emoji>* : Set emoji
+• *.cache* : View stats
+• *.cache clear* : Hapus cache
+• *.cache enable/disable* : Manage cache
+• *.pair <nomor>* : Pairing code
+
+📚 *DOCS:*
+• ADMIN_COMMANDS.md - Full admin guide
+• GROQ_AI_SETUP.md - AI setup
+• CACHE_GUIDE.md - Caching info`;
+
+                return isAdmin ? adminMenu : publicMenu;
+            }
+
+            const HELP_MESSAGE = getHelpMessage(isPrivateChat);
 
             if (text.toLowerCase() === 'tes') {
                 await sock.sendMessage(jid, { text: `🤖 Bot OK. Koneksi aktif. Halo ${name}!` }, { quoted: msg });
@@ -707,8 +827,123 @@ async function connectToWhatsApp() {
                 return;
             }
 
+            // --- Fitur Set Groq API Key ---
+            if (/^\.setgroq\s+/i.test(text)) {
+                // ⚠️ SECURITY: API Key setup hanya di private chat
+                if (isGroupChat) {
+                    await sock.sendMessage(jid, { text: `⛔ *.setgroq* hanya bisa digunakan di **private chat**.\n\nAlasan keamanan: API Key sangat sensitif dan tidak boleh di-share di group.` }, { quoted: msg });
+                    return;
+                }
+
+                const apiKey = text.replace(/^\.setgroq\s+/i, '').trim();
+                if (!apiKey) {
+                    await sock.sendMessage(jid, { text: `⚠️ Gunakan: .setgroq <api_key>\n\n📋 Cara dapat API Key:\n1. Kunjungi: https://console.groq.com/keys\n2. Login/Signup dengan akun\n3. Buat API Key baru\n4. Copy dan kirim ke bot dengan format: .setgroq <key>` }, { quoted: msg });
+                    return;
+                }
+
+                // Update dan save ke .env file
+                try {
+                    const envPath = '/home/oem/Documents/bail/.env';
+                    let envContent = '';
+                    
+                    if (fs.existsSync(envPath)) {
+                        envContent = fs.readFileSync(envPath, 'utf-8');
+                        // Replace existing GROQ_API_KEY atau tambah baru
+                        if (envContent.includes('GROQ_API_KEY=')) {
+                            envContent = envContent.replace(/GROQ_API_KEY=.*/g, `GROQ_API_KEY=${apiKey}`);
+                        } else {
+                            envContent += `\nGROQ_API_KEY=${apiKey}`;
+                        }
+                    } else {
+                        envContent = `GROQ_API_KEY=${apiKey}\nGROQ_MODEL=llama-3.1-70b-versatile`;
+                    }
+
+                    fs.writeFileSync(envPath, envContent, 'utf-8');
+
+                    // Reload groq client
+                    process.env.GROQ_API_KEY = apiKey;
+                    groqClient = new Groq({ apiKey: apiKey });
+
+                    await sock.sendMessage(jid, { text: `✅ Groq API Key tersimpan!\n🤖 AI mode siap digunakan.\nGunakan .aimode untuk aktifkan AI.` }, { quoted: msg });
+                } catch (err) {
+                    console.error('Error setting Groq API key:', err);
+                    await sock.sendMessage(jid, { text: `❌ Gagal menyimpan API key: ${err.message}` }, { quoted: msg });
+                }
+                return;
+            }
+
+            // --- Fitur Cache Management ---
+            if (/^\.cache(?:\s+|$)/i.test(text)) {
+                const subcommand = text.replace(/^\.cache\s*/i, '').trim().toLowerCase();
+                
+                if (subcommand === 'clear') {
+                    // ⚠️ SECURITY: Cache clear hanya di private chat
+                    if (isGroupChat) {
+                        await sock.sendMessage(jid, { text: `⛔ *.cache clear* hanya bisa digunakan di **private chat**.\n\nIni adalah aksi admin yang sensitive.` }, { quoted: msg });
+                        return;
+                    }
+                    aiCache.clear();
+                    await sock.sendMessage(jid, { text: `🧹 Cache telah dihapus!\n\n💡 Semua cached AI responses dihapus. Cache akan diisi ulang saat ada pencarian baru.` }, { quoted: msg });
+                    return;
+                }
+
+                if (subcommand === 'disable') {
+                    // ⚠️ SECURITY: Cache disable hanya di private chat
+                    if (isGroupChat) {
+                        await sock.sendMessage(jid, { text: `⛔ *.cache disable* hanya bisa digunakan di **private chat**.\n\nIni adalah aksi admin yang sensitive.` }, { quoted: msg });
+                        return;
+                    }
+                    process.env.CACHE_ENABLED = 'false';
+                    // Update .env file
+                    try {
+                        const envPath = '/home/oem/Documents/bail/.env';
+                        let envContent = fs.readFileSync(envPath, 'utf-8');
+                        if (envContent.includes('CACHE_ENABLED=')) {
+                            envContent = envContent.replace(/CACHE_ENABLED=.*/g, 'CACHE_ENABLED=false');
+                        } else {
+                            envContent += '\nCACHE_ENABLED=false';
+                        }
+                        fs.writeFileSync(envPath, envContent, 'utf-8');
+                    } catch (err) {
+                        console.error('Error updating .env:', err);
+                    }
+                    await sock.sendMessage(jid, { text: `⛔ Cache DISABLED\n\nBot akan memanggil Groq API untuk setiap request tanpa cache.` }, { quoted: msg });
+                    return;
+                }
+
+                if (subcommand === 'enable') {
+                    process.env.CACHE_ENABLED = 'true';
+                    // Update .env file
+                    try {
+                        const envPath = '/home/oem/Documents/bail/.env';
+                        let envContent = fs.readFileSync(envPath, 'utf-8');
+                        if (envContent.includes('CACHE_ENABLED=')) {
+                            envContent = envContent.replace(/CACHE_ENABLED=.*/g, 'CACHE_ENABLED=true');
+                        } else {
+                            envContent += '\nCACHE_ENABLED=true';
+                        }
+                        fs.writeFileSync(envPath, envContent, 'utf-8');
+                    } catch (err) {
+                        console.error('Error updating .env:', err);
+                    }
+                    await sock.sendMessage(jid, { text: `✅ Cache ENABLED\n\nBot akan menggunakan cache untuk menghemat API calls.` }, { quoted: msg });
+                    return;
+                }
+
+                // Default: show stats
+                const statsMessage = aiCache.getStatsMessage();
+                await sock.sendMessage(jid, { text: statsMessage + `\n\n📝 *Commands:*\n• .cache - Tampilkan statistik\n• .cache stats - Detail cache entries\n• .cache clear - Hapus semua cache\n• .cache enable - Aktifkan cache\n• .cache disable - Nonaktifkan cache` }, { quoted: msg });
+                return;
+            }
+
             // --- Fitur Pairing Code ---
             if (/^\.pair(?:\s+|$)/i.test(text)) {
+                // ⚠️ SECURITY: Pairing setup hanya di private chat
+                if (isGroupChat) {
+                    await sock.sendMessage(jid, { text: `⛔ *.pair* hanya bisa digunakan di **private chat**.\n\nAlasan keamanan: Pairing code sangat sensitif dan hanya untuk personal device setup.` }, { quoted: msg });
+                    return;
+                }
+
                 const args = text.trim().split(/\s+/);
                 let targetNumber = args[1];
                 const pairKey = args[2] || 'ELAINA01';
@@ -805,25 +1040,6 @@ async function connectToWhatsApp() {
             // --- Multiple PLU otomatis terdeteksi di bagian single PLU handler ---
 
             if (text.toLowerCase() === '.menu' || text.toLowerCase() === '.help') {
-                const HELP_MESSAGE = `👋 Selamat Datang ${name}.
-🤖 Bot mencari kode produk (PLU/Barcode/Nama).
-
-📋 *Cara Pakai:*
-1. Kirim *Angka* (PLU/Barcode) untuk lihat label.
-   • Single: 20019930
-   • Multiple: 20019930 20019931 20019932 (space/dot/newline separator)
-2. Ketik *.cari <Nama>* untuk cari kode.
-
-⚙️ *Fitur Lain:*
-• *.bulk <kode> <jumlah>* : Label dengan Qty.
-• *.aktiva* : Kirim semua barcode dari folder Barcode_generator.
-  (Jika di group, dikirim ke pesan pribadi)
-• *.pair <nomor> [key]* : Buat pairing code untuk setup awal saja
-• *.aimode* : Aktifkan/nonaktifkan mode AI
-🎥 *Fitur CCTV:*
-• .cctv : Lihat akses CCTV
-
-• *.menu* : Tampilkan pesan ini.`;
                 await sock.sendMessage(jid, { text: HELP_MESSAGE }, { quoted: msg });
                 return;
             }
@@ -882,7 +1098,7 @@ async function connectToWhatsApp() {
                                 captionText += `\n\n${listingInfo}`;
                             }
                             if (aiMode) {
-                                captionText = formatAIMessage(captionText);
+                                captionText = await processWithAI(captionText);
                             }
                             await sock.sendMessage(jid, {
                                 image: finalImageBuffer,
@@ -894,7 +1110,7 @@ async function connectToWhatsApp() {
                         } else {
                             let errorMsg = `Produk dengan kode "${singleCode}" tidak ditemukan oleh ${name}.`;
                             if (aiMode) {
-                                errorMsg = formatAIMessage(errorMsg);
+                                errorMsg = await processWithAI(errorMsg);
                             }
                             await sock.sendMessage(jid, { text: errorMsg }, { quoted: msg });
                             
@@ -983,7 +1199,7 @@ async function connectToWhatsApp() {
                         replyMsg += `_Kirim kode PLU di atas untuk melihat gambar._`;
 
                         if (aiMode) {
-                            replyMsg = formatAIMessage(replyMsg);
+                            replyMsg = await processWithAI(replyMsg);
                         }
 
                         await sock.sendMessage(jid, { text: replyMsg }, { quoted: msg });
@@ -993,7 +1209,7 @@ async function connectToWhatsApp() {
                     } else {
                         let notFoundMsg = `❌ Tidak ditemukan produk dengan nama "${query}" oleh ${name}.`;
                         if (aiMode) {
-                            notFoundMsg = formatAIMessage(notFoundMsg);
+                            notFoundMsg = await processWithAI(notFoundMsg);
                         }
                         await sock.sendMessage(jid, { text: notFoundMsg }, { quoted: msg });
                         
