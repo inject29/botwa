@@ -22,7 +22,7 @@ const ENV_PATH = path.resolve('.env');
 
 // --- Groq AI Configuration ---
 let groqApiKey = process.env.GROQ_API_KEY;
-const groqModel = process.env.GROQ_MODEL || 'llama-3.1-70b-versatile';
+const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 const cacheEnabled = process.env.CACHE_ENABLED !== 'false'; // Default: enabled
 let groqClient = null;
 if (groqApiKey) {
