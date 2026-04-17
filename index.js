@@ -203,6 +203,40 @@ async function processWithAI(text) {
     return formatAIMessage(text);
 }
 
+async function processSearchWithAI(query, results) {
+    if (!aiMode || !groqClient || results.length === 0) {
+        return null;
+    }
+
+    // Format PLU data untuk AI
+    const pluList = results.map((p, idx) => 
+        `${idx + 1}. ${p.nama}\n   PLU: ${p.plu} | Barcode: ${p.barcode}`
+    ).join('\n');
+
+    const prompt = `Kamu adalah asisten toko online. User mencari produk dengan kata kunci: "${query}". Berikut daftar produk yang ditemukan dengan kode PLU-nya:
+
+${pluList}
+
+Berikan respon singkat dan helpful dalam Bahasa Indonesia yang:
+1. Merangkum produk apa saja yang ditemukan
+2. Menyebutkan jumlah produk yang tersedia
+3. Tips memilih produk jika relevan
+
+Jangan ulangi seluruh list, cukup hal penting saja.`;
+
+    const response = await getGroqResponse(prompt);
+    if (response) {
+        // Gabungkan AI response dengan product list
+        let replyMsg = `🔎 *Hasil Pencarian: "${query}"*\nDitemukan ${results.length} produk:\n\n`;
+        results.forEach(p => {
+            replyMsg += `• *${p.nama}*\n  PLU: ${p.plu} | Barcode: ${p.barcode}\n\n`;
+        });
+        replyMsg += `\n🤖 *AI Summary:*\n${response}\n\n_Kirim kode PLU di atas untuk melihat gambar._`;
+        return replyMsg;
+    }
+    return null;
+}
+
 async function sendReaction(sock, jid, msgKey, emoji) {
     try {
         await sock.sendMessage(jid, {
@@ -1200,8 +1234,12 @@ async function connectToWhatsApp() {
                         });
                         replyMsg += `_Kirim kode PLU di atas untuk melihat gambar._`;
 
+                        // Use AI-enhanced search response if AI mode is ON
                         if (aiMode) {
-                            replyMsg = await processWithAI(replyMsg);
+                            const aiResponse = await processSearchWithAI(query, results);
+                            if (aiResponse) {
+                                replyMsg = aiResponse;
+                            }
                         }
 
                         await sock.sendMessage(jid, { text: replyMsg }, { quoted: msg });
