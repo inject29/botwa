@@ -40,7 +40,7 @@ let initialPairPhone = null;
 let initialPairKey = 'ELAINA01';
 let initialPairMode = false;
 let initialPairRequested = false;
-let aiMode = false;
+let aiMode = true;
 let autoReactEmoji = '❤️';
 let autoReactEnabled = false;
 
