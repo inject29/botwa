@@ -159,7 +159,7 @@ async function getGroqResponse(prompt) {
     }
 
     try {
-        const message = await groqClient.messages.create({
+        const message = await groqClient.chat.completions.create({
             messages: [
                 {
                     role: 'user',
@@ -171,8 +171,8 @@ async function getGroqResponse(prompt) {
             temperature: 0.7
         });
 
-        if (message.content && message.content[0] && message.content[0].text) {
-            const response = message.content[0].text;
+        if (message.choices && message.choices[0] && message.choices[0].message && message.choices[0].message.content) {
+            const response = message.choices[0].message.content;
             
             // Save ke cache jika enabled
             if (cacheEnabled) {
