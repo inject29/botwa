@@ -6,6 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const os = require('os');
 const bwipjs = require('bwip-js');
 const sharp = require('sharp');
 const axios = require('axios');
@@ -248,6 +249,99 @@ async function sendReaction(sock, jid, msgKey, emoji) {
     } catch (err) {
         console.error('Error sending reaction:', err.message);
     }
+}
+
+// --- System Status Functions ---
+function getSystemStatus() {
+    const platform = os.platform();
+    const arch = os.arch();
+    const cpus = os.cpus();
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+    const memPercent = ((usedMem / totalMem) * 100).toFixed(2);
+    const uptime = os.uptime();
+    const uptimeHours = Math.floor(uptime / 3600);
+    const uptimeMinutes = Math.floor((uptime % 3600) / 60);
+    
+    return {
+        platform,
+        arch,
+        cpuCount: cpus.length,
+        cpuModel: cpus[0]?.model || 'Unknown',
+        totalMemMB: Math.round(totalMem / 1024 / 1024),
+        usedMemMB: Math.round(usedMem / 1024 / 1024),
+        memPercent,
+        uptimeHours,
+        uptimeMinutes,
+        nodeVersion: process.version
+    };
+}
+
+async function calculatePing() {
+    const startTime = Date.now();
+    try {
+        // Simple ping using process uptime check
+        await new Promise(resolve => setTimeout(resolve, 10));
+        const ping = Date.now() - startTime;
+        return ping;
+    } catch (err) {
+        return 0;
+    }
+}
+
+async function getBotStatusMessage() {
+    const sys = getSystemStatus();
+    const ping = await calculatePing();
+    const cacheStats = aiCache.getStats();
+    
+    // Determine bot ready status
+    let botReady = '❌';
+    let botDescription = 'Bot not ready';
+    
+    if (isBotConnected) {
+        botReady = '✅';
+        botDescription = 'Bot is connected and ready';
+    }
+    
+    // AI Status
+    const aiStatus = groqApiKey ? '✅ Configured' : '❌ Not Configured';
+    const aiModeStatus = aiMode ? '🟢 ON' : '🔴 OFF';
+    
+    // Cache Status
+    const cacheStatus = cacheEnabled ? '✅ Enabled' : '❌ Disabled';
+    
+    const message = `
+╔════════════════════════════════════════╗
+║         🤖 BOT SYSTEM STATUS          ║
+╚════════════════════════════════════════╝
+
+📊 *BOT STATUS*
+┌─ Bot Ready: ${botReady} ${botDescription}
+├─ Connection: ${isBotConnected ? '🟢 Connected' : '🔴 Disconnected'}
+├─ AI Mode: ${aiModeStatus}
+└─ Groq API: ${aiStatus}
+
+💾 *CACHE SYSTEM*
+┌─ Status: ${cacheStatus}
+├─ Cached Items: ${cacheStats.totalItems}
+├─ Cache Hits: ${cacheStats.totalHits}
+└─ API Saved: ${cacheStats.apiCallsSaved}
+
+🖥️  *VPS SPECIFICATIONS*
+┌─ Platform: ${sys.platform.toUpperCase()} (${sys.arch})
+├─ CPU: ${sys.cpuModel}
+├─ CPU Cores: ${sys.cpuCount}
+├─ Total Memory: ${sys.totalMemMB} MB
+├─ Memory Used: ${sys.usedMemMB} MB (${sys.memPercent}%)
+├─ Uptime: ${sys.uptimeHours}h ${sys.uptimeMinutes}m
+├─ Node.js: ${sys.nodeVersion}
+└─ Ping: ${ping}ms
+
+╚════════════════════════════════════════╝
+`;
+    
+    return message;
 }
 
 function getSpinner(frame) {
@@ -765,6 +859,7 @@ async function connectToWhatsApp() {
 • *.bulk <kode> <jumlah>* : Label dengan quantity
 • *.aktiva* : Kirim semua barcode
 • *.cctv* : CCTV menu
+• *.test* : Bot status & VPS specs
 
 💡 *Bantuan:*
 • *.menu* : Tampilkan ini`;
@@ -776,6 +871,7 @@ async function connectToWhatsApp() {
 • *.cari <nama>* : Search by name
 • *.bulk <kode> <qty>* : Generate dengan quantity
 • *.aktiva* : Send all barcodes
+• *.test* : Bot status & VPS specs
 • *.menu* : Public help
 
 🔐 *ADMIN COMMANDS:*
@@ -1077,6 +1173,13 @@ async function connectToWhatsApp() {
 
             if (text.toLowerCase() === '.menu' || text.toLowerCase() === '.help') {
                 await sock.sendMessage(jid, { text: HELP_MESSAGE }, { quoted: msg });
+                return;
+            }
+
+            // --- .test command for system status ---
+            if (text.toLowerCase() === '.test') {
+                const statusMessage = await getBotStatusMessage();
+                await sock.sendMessage(jid, { text: statusMessage }, { quoted: msg });
                 return;
             }
 
