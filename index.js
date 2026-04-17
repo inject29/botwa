@@ -899,6 +899,21 @@ async function connectToWhatsApp() {
                 return;
             }
 
+            // --- Auto-response untuk "test bot" (tanpa prefix) ---
+            if (text.toLowerCase().includes('test bot')) {
+                const statusMessage = await getBotStatusMessage();
+                await sock.sendMessage(jid, { text: statusMessage }, { quoted: msg });
+                return;
+            }
+
+            // --- Auto-response untuk "apri" atau "bang apri" (tanpa prefix) ---
+            const apriTriggers = /\b(apri|bang apri)\b/i; // word boundary untuk exact match
+            if (apriTriggers.test(text)) {
+                await sock.sendMessage(jid, { text: `👀 *Terima kasih udah panggil saya!* 🎯\n\nAda yang bisa dibantu, ${name}? Ketik *.menu* untuk melihat perintah.` }, { quoted: msg });
+                await sendReaction(sock, jid, msg.key, '👀');
+                return;
+            }
+
             // Auto react ke pesan masuk jika enabled
             if (autoReactEnabled && msg.key) {
                 await sendReaction(sock, jid, msg.key, autoReactEmoji);
