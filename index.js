@@ -19,6 +19,9 @@ const { getListingCaption } = require('./listing_service'); // Import modul List
 
 // --- Dynamic .env Path (works on any directory) ---
 const ENV_PATH = path.resolve('.env');
+
+// --- Groq AI Configuration ---
+const groqApiKey = process.env.GROQ_API_KEY;
 const groqModel = process.env.GROQ_MODEL || 'llama-3.1-70b-versatile';
 const cacheEnabled = process.env.CACHE_ENABLED !== 'false'; // Default: enabled
 let groqClient = null;
@@ -858,7 +861,7 @@ async function connectToWhatsApp() {
                         envContent = `GROQ_API_KEY=${apiKey}\nGROQ_MODEL=llama-3.1-70b-versatile`;
                     }
 
-                    fs.writeFileSync(envPath, envContent, 'utf-8');
+                    fs.writeFileSync(ENV_PATH, envContent, 'utf-8');
 
                     // Reload groq client
                     process.env.GROQ_API_KEY = apiKey;
