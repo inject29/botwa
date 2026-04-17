@@ -864,6 +864,7 @@ async function connectToWhatsApp() {
                     fs.writeFileSync(ENV_PATH, envContent, 'utf-8');
 
                     // Reload groq client
+                    groqApiKey = apiKey;
                     process.env.GROQ_API_KEY = apiKey;
                     groqClient = new Groq({ apiKey: apiKey });
 
