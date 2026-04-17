@@ -4,6 +4,7 @@ const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
+const path = require('path');
 const readline = require('readline');
 const bwipjs = require('bwip-js');
 const sharp = require('sharp');
@@ -16,8 +17,8 @@ const smsService = require('./sms_service'); // 1. Import modul SMS terpisah
 const cctvService = require('./cctv_service'); // Import modul CCTV
 const { getListingCaption } = require('./listing_service'); // Import modul Listing
 
-// --- Groq AI Configuration ---
-const groqApiKey = process.env.GROQ_API_KEY;
+// --- Dynamic .env Path (works on any directory) ---
+const ENV_PATH = path.resolve('.env');
 const groqModel = process.env.GROQ_MODEL || 'llama-3.1-70b-versatile';
 const cacheEnabled = process.env.CACHE_ENABLED !== 'false'; // Default: enabled
 let groqClient = null;
@@ -843,11 +844,10 @@ async function connectToWhatsApp() {
 
                 // Update dan save ke .env file
                 try {
-                    const envPath = '/home/oem/Documents/bail/.env';
                     let envContent = '';
                     
-                    if (fs.existsSync(envPath)) {
-                        envContent = fs.readFileSync(envPath, 'utf-8');
+                    if (fs.existsSync(ENV_PATH)) {
+                        envContent = fs.readFileSync(ENV_PATH, 'utf-8');
                         // Replace existing GROQ_API_KEY atau tambah baru
                         if (envContent.includes('GROQ_API_KEY=')) {
                             envContent = envContent.replace(/GROQ_API_KEY=.*/g, `GROQ_API_KEY=${apiKey}`);
@@ -896,14 +896,13 @@ async function connectToWhatsApp() {
                     process.env.CACHE_ENABLED = 'false';
                     // Update .env file
                     try {
-                        const envPath = '/home/oem/Documents/bail/.env';
-                        let envContent = fs.readFileSync(envPath, 'utf-8');
+                        let envContent = fs.readFileSync(ENV_PATH, 'utf-8');
                         if (envContent.includes('CACHE_ENABLED=')) {
                             envContent = envContent.replace(/CACHE_ENABLED=.*/g, 'CACHE_ENABLED=false');
                         } else {
                             envContent += '\nCACHE_ENABLED=false';
                         }
-                        fs.writeFileSync(envPath, envContent, 'utf-8');
+                        fs.writeFileSync(ENV_PATH, envContent, 'utf-8');
                     } catch (err) {
                         console.error('Error updating .env:', err);
                     }
@@ -915,14 +914,13 @@ async function connectToWhatsApp() {
                     process.env.CACHE_ENABLED = 'true';
                     // Update .env file
                     try {
-                        const envPath = '/home/oem/Documents/bail/.env';
-                        let envContent = fs.readFileSync(envPath, 'utf-8');
+                        let envContent = fs.readFileSync(ENV_PATH, 'utf-8');
                         if (envContent.includes('CACHE_ENABLED=')) {
                             envContent = envContent.replace(/CACHE_ENABLED=.*/g, 'CACHE_ENABLED=true');
                         } else {
                             envContent += '\nCACHE_ENABLED=true';
                         }
-                        fs.writeFileSync(envPath, envContent, 'utf-8');
+                        fs.writeFileSync(ENV_PATH, envContent, 'utf-8');
                     } catch (err) {
                         console.error('Error updating .env:', err);
                     }
