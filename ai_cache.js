@@ -7,7 +7,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const CACHE_FILE = 'ai_cache.json';
-const CACHE_EXPIRY_HOURS = 24; // Cache expire setelah 24 jam
+const CACHE_EXPIRY_HOURS = parseInt(process.env.CACHE_EXPIRY_HOURS) || 720; // Default: 1 bulan (720 jam)
 
 class AICache {
     constructor() {
