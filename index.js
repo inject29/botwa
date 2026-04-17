@@ -21,7 +21,7 @@ const { getListingCaption } = require('./listing_service'); // Import modul List
 const ENV_PATH = path.resolve('.env');
 
 // --- Groq AI Configuration ---
-const groqApiKey = process.env.GROQ_API_KEY;
+let groqApiKey = process.env.GROQ_API_KEY;
 const groqModel = process.env.GROQ_MODEL || 'llama-3.1-70b-versatile';
 const cacheEnabled = process.env.CACHE_ENABLED !== 'false'; // Default: enabled
 let groqClient = null;
