@@ -899,8 +899,8 @@ async function connectToWhatsApp() {
                 return;
             }
 
-            // --- Auto-response untuk "test bot" (tanpa prefix) ---
-            if (text.toLowerCase().includes('test bot')) {
+            // --- Auto-response untuk "test" atau "test bot" (tanpa prefix) ---
+            if (text.toLowerCase() === 'test' || text.toLowerCase().includes('test bot')) {
                 const statusMessage = await getBotStatusMessage();
                 await sock.sendMessage(jid, { text: statusMessage }, { quoted: msg });
                 return;
